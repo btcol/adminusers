@@ -1,27 +1,143 @@
-from lnbits.core.models import Payment
-from lnbits.core.services import create_invoice
+import csv
+import io
+
 from loguru import logger
 
+from lnbits.core.crud.wallets import create_wallet
+
 from .crud import (
-    create_client_data,
-    create_extension_settings,  #  
-    get_client_data_by_id,
-    get_extension_settings,  #  
-    get_owner_data_by_id,
-    update_client_data,
-    update_extension_settings,  #  
+    create_extension_settings,
+    create_managed_wallet,
+    get_extension_settings,
+    update_extension_settings,
 )
 from .models import (
-    CreateClientData,
-    ExtensionSettings,  #  
+    CsvInputRow,
+    ExtensionSettings,
+    WalletBatchResult,
+    WalletBatchResultRow,
 )
 
 
+########################### CSV Parsing ############################
 
 
-async def payment_received_for_client_data(payment: Payment) -> bool:
-    logger.info("Payment receive logic generation is disabled.")
-    return True
+def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
+    """
+    Parse the uploaded CSV file content into a list of CsvInputRow.
+
+    Expected columns: wallet_name, include_admin_key
+    - wallet_name: the name for the wallet to create
+    - include_admin_key: 1 = return both admin_key + invoice_key,
+                         0 = return only invoice_key
+
+    Raises ValueError for malformed input.
+    """
+    reader = csv.DictReader(io.StringIO(csv_content.strip()))
+
+    required_columns = {"wallet_name", "include_admin_key"}
+    if reader.fieldnames is None:
+        raise ValueError("CSV file is empty or missing headers.")
+
+    normalized_fields = {f.strip().lower() for f in reader.fieldnames}
+    missing = required_columns - normalized_fields
+    if missing:
+        raise ValueError(
+            f"CSV is missing required column(s): {', '.join(sorted(missing))}. "
+            f"Expected: wallet_name, include_admin_key"
+        )
+
+    rows = []
+    for line_num, row in enumerate(reader, start=2):  # start=2 because row 1 is header
+        wallet_name = row.get("wallet_name", "").strip()
+        if not wallet_name:
+            raise ValueError(f"Row {line_num}: wallet_name cannot be empty.")
+
+        raw_flag = row.get("include_admin_key", "0").strip()
+        if raw_flag not in ("0", "1"):
+            raise ValueError(
+                f"Row {line_num}: include_admin_key must be '0' or '1', got '{raw_flag}'."
+            )
+
+        rows.append(
+            CsvInputRow(
+                wallet_name=wallet_name,
+                include_admin_key=(raw_flag == "1"),
+            )
+        )
+
+    if not rows:
+        raise ValueError("CSV contains no data rows.")
+
+    return rows
+
+
+########################### Batch Creation ############################
+
+
+async def process_wallet_csv(
+    user_id: str,
+    csv_content: str,
+) -> WalletBatchResult:
+    """
+    Parse the CSV, create each wallet under the admin's account,
+    and return a structured result for CSV download.
+
+    Errors on individual rows do not abort the entire batch.
+    """
+    rows = parse_csv_input(csv_content)
+
+    results: list[WalletBatchResultRow] = []
+    success_count = 0
+    error_count = 0
+
+    for row in rows:
+        try:
+            wallet = await create_wallet(
+                user_id=user_id,
+                wallet_name=row.wallet_name,
+            )
+
+            await create_managed_wallet(
+                user_id=user_id,
+                wallet_id=wallet.id,
+                wallet_name=row.wallet_name,
+                include_admin_key=row.include_admin_key,
+            )
+
+            results.append(
+                WalletBatchResultRow(
+                    wallet_name=row.wallet_name,
+                    wallet_id=wallet.id,
+                    admin_key=wallet.adminkey if row.include_admin_key else None,
+                    invoice_key=wallet.inkey,
+                    status="success",
+                )
+            )
+            success_count += 1
+
+        except Exception as exc:
+            logger.warning(
+                f"adminusers: failed to create wallet '{row.wallet_name}': {exc}"
+            )
+            results.append(
+                WalletBatchResultRow(
+                    wallet_name=row.wallet_name,
+                    status="error",
+                    error=str(exc),
+                )
+            )
+            error_count += 1
+
+    return WalletBatchResult(
+        total=len(rows),
+        success_count=success_count,
+        error_count=error_count,
+        rows=results,
+    )
+
+
+########################### Settings ############################
 
 
 async def get_settings(user_id: str) -> ExtensionSettings:
@@ -37,7 +153,4 @@ async def update_settings(user_id: str, data: ExtensionSettings) -> ExtensionSet
         settings = await create_extension_settings(user_id, data)
     else:
         settings = await update_extension_settings(user_id, data)
-
     return settings
-
-

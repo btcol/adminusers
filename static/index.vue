@@ -1,212 +1,203 @@
 <template id="page-adminusers">
   <div class="row q-col-gutter-md">
+
+    <!-- ===================== LEFT COLUMN ===================== -->
     <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
-    
-      <q-card
-        id="settingsCard"
-      >
-        <q-card-section
-          class=""
-        >
-          <div class="row">
+
+      <!-- ── Header card ── -->
+      <q-card id="headerCard">
+        <q-card-section>
+          <div class="row items-center no-wrap">
             <div class="col">
-              <span class="text-h5">adminusers</span>
-              <q-btn
-                @click="showSettingsDataForm()"
-                v-if="g.user.admin"
-                unelevated
-                split
-                color="primary"
-                icon="settings"
-                class="float-right"
-              >
-              </q-btn>
+              <span class="text-h5">Admin Wallet Manager</span>
+              <div class="text-caption text-grey q-mt-xs">
+                Upload a CSV to create wallets in bulk and download their credentials.
+              </div>
             </div>
           </div>
         </q-card-section>
       </q-card>
-    
 
-      <div class="q-mt-lg">
-        <span class="text-h5">Owner Data</span>
-      </div>
-      <q-card
-        id="ownerDataCard"
-        class="q-mt-xs"
-      >
-        <q-card-section
-          class=""
-        >
-          <div class="row items-center no-wrap q-mb-md">
-            <div class="col">
-              <q-input
-                :label="$t('search')"
-                dense
-                class="q-pr-xl"
-                v-model="ownerDataTable.search"
-              >
-                <template v-slot:before>
-                  <q-icon name="search"> </q-icon>
-                </template>
-                <template v-slot:append>
-                  <q-icon
-                    v-if="ownerDataTable.search !== ''"
-                    name="close"
-                    @click="ownerDataTable.search = ''"
-                    class="cursor-pointer"
-                  >
-                  </q-icon>
-                </template>
-              </q-input>
+      <!-- ── CSV Upload card ── -->
+      <q-card id="uploadCard">
+        <q-card-section>
+          <div class="text-h6 q-mb-md">
+            <q-icon name="upload_file" class="q-mr-sm" />
+            Upload Wallet CSV
+          </div>
+
+          <q-banner class="bg-grey-2 q-mb-md" rounded>
+            <template v-slot:avatar>
+              <q-icon name="info" color="primary" />
+            </template>
+            <div class="text-body2">
+              <strong>CSV format required:</strong> two columns —
+              <code>wallet_name</code> and <code>include_admin_key</code>
+              (1 = return admin + invoice key, 0 = return only invoice key).
             </div>
-            <div class="col-auto">
-              
-              <q-btn
-                @click="showNewOwnerDataForm()"
-                unelevated
-                split
-                color="primary"
-              >
-                New Owner Data
-              </q-btn>
-              
+            <div class="q-mt-xs">
               <q-btn
                 flat
-                color="grey"
-                icon="file_download"
-                @click="exportOwnerDataCSV"
-                >CSV</q-btn
-              >
-            </div>
-          </div>
-          <q-table
-            dense
-            flat
-            :rows="ownerDataList"
-            row-key="id"
-            :columns="ownerDataTable.columns"
-            v-model:pagination="ownerDataTable.pagination"
-            :loading="ownerDataTable.loading"
-            @request="getOwnerData"
-          >
-            <template v-slot:header="props">
-              <q-tr :props="props">
-                <q-th auto-width></q-th>
-                <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                  ${ col.label }
-                </q-th>
-              </q-tr>
-            </template>
-
-            <template v-slot:body="props">
-              <q-tr :props="props">
-                <q-td auto-width>
-                   
-                  <q-btn
-                    flat
-                    dense
-                    size="xs"
-                    @click="showEditOwnerDataForm(props.row)"
-                    icon="edit"
-                    color="light-blue"
-                    class="q-mr-sm"
-                  >
-                    <q-tooltip> Edit </q-tooltip>
-                  </q-btn>
-                  
-                  <q-btn
-                    flat
-                    dense
-                    size="xs"
-                    @click="deleteOwnerData(props.row.id)"
-                    icon="cancel"
-                    color="pink"
-                    class="q-mr-sm"
-                  >
-                    <q-tooltip> Delete </q-tooltip>
-                  </q-btn>
-                </q-td>
-
-                <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                  <div v-if="col.field == 'updated_at'">
-                    <span v-text="dateFromNow(col.value)"> </span>
-                  </div>
-                  <div v-else>${ col.value }</div>
-                </q-td>
-              </q-tr>
-            </template>
-          </q-table>
-        </q-card-section>
-      </q-card>
-
-      <div class="q-mt-lg">
-        <span class="text-h5">Client Data</span>
-      </div>
-      <q-card
-        id="clientDataCard"
-        class="q-mt-xs"
-      >
-        <q-card-section
-          class=""
-        >
-          <div class="row items-center no-wrap q-mb-md">
-            <div class="col">
-              <q-input
-                :label="$t('search')"
                 dense
-                class="q-pr-xl"
-                v-model="clientDataTable.search"
-              >
-                <template v-slot:before>
-                  <q-icon name="search"> </q-icon>
-                </template>
-                <template v-slot:append>
-                  <q-icon
-                    v-if="clientDataTable.search !== ''"
-                    name="close"
-                    @click="clientDataTable.search = ''"
-                    class="cursor-pointer"
-                  >
-                  </q-icon>
-                </template>
-              </q-input>
+                size="sm"
+                color="primary"
+                label="Download template"
+                icon="file_download"
+                @click="downloadTemplate"
+              />
             </div>
-            <div class="col-auto">
-              <q-select
+          </q-banner>
+
+          <div class="row q-col-gutter-md items-end">
+            <div class="col">
+              <q-file
+                v-model="uploadState.file"
+                label="Select CSV file"
+                accept=".csv"
                 filled
                 dense
-                v-model="clientDataFormDialog.ownerData"
-                :options="[
-                  {label: 'All Owner Data', value: ''},
-                  ...ownerDataList.map(x => ({
-                    label: x.name || x.id,
-                    value: x.id
-                  }))
-                ]"
-                label="Owner Data"
-                class="q-mb-md"
-              ></q-select>
+                clearable
+                :disable="uploadState.loading"
+              >
+                <template v-slot:prepend>
+                  <q-icon name="attach_file" />
+                </template>
+              </q-file>
             </div>
             <div class="col-auto">
               <q-btn
-                flat
-                color="grey"
-                icon="file_download"
-                class="q-mb-md"
-                @click="exportClientDataCSV"
-                >CSV</q-btn
-              >
+                id="processBtn"
+                unelevated
+                color="primary"
+                icon="play_arrow"
+                label="Process CSV"
+                :disable="!uploadState.file || uploadState.loading"
+                :loading="uploadState.loading"
+                @click="uploadCSV"
+              />
             </div>
           </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- ── Result card (shown after processing) ── -->
+      <q-card id="resultCard" v-if="batchResult">
+        <q-card-section>
+          <div class="row items-center q-mb-md">
+            <div class="col text-h6">
+              <q-icon name="summarize" class="q-mr-sm" />
+              Processing Result
+            </div>
+            <div class="col-auto">
+              <q-btn
+                id="downloadResultBtn"
+                unelevated
+                color="positive"
+                icon="file_download"
+                label="Download CSV"
+                @click="downloadResultCSV"
+              />
+            </div>
+          </div>
+
+          <!-- Summary chips -->
+          <div class="row q-gutter-sm q-mb-md">
+            <q-chip icon="check_circle" color="positive" text-color="white">
+              ${ batchResult.success_count } created
+            </q-chip>
+            <q-chip
+              v-if="batchResult.error_count > 0"
+              icon="error"
+              color="negative"
+              text-color="white"
+            >
+              ${ batchResult.error_count } failed
+            </q-chip>
+            <q-chip icon="list" color="grey-7" text-color="white">
+              ${ batchResult.total } total
+            </q-chip>
+          </div>
+
+          <!-- Error rows table -->
+          <div v-if="batchResult.error_count > 0">
+            <div class="text-subtitle2 q-mb-sm text-negative">
+              <q-icon name="warning" class="q-mr-xs" />Failed rows
+            </div>
+            <q-table
+              dense
+              flat
+              :rows="errorRows"
+              :columns="errorColumns"
+              row-key="wallet_name"
+              hide-bottom
+            />
+          </div>
+
+          <!-- Security note -->
+          <q-banner class="bg-orange-1 q-mt-md" rounded>
+            <template v-slot:avatar>
+              <q-icon name="lock" color="orange" />
+            </template>
+            <span class="text-caption">
+              Wallet credentials are included in the downloaded CSV only.
+              They are not stored or shown here for security reasons.
+            </span>
+          </q-banner>
+        </q-card-section>
+      </q-card>
+
+      <!-- ── Wallet History card ── -->
+      <div class="q-mt-md">
+        <span class="text-h6">Wallet Registry</span>
+        <span class="text-caption text-grey q-ml-sm">
+          (informational only — no keys are shown)
+        </span>
+      </div>
+
+      <q-card id="historyCard">
+        <q-card-section>
+          <div class="row items-center no-wrap q-mb-md">
+            <div class="col">
+              <q-input
+                :label="$t('search')"
+                dense
+                class="q-pr-xl"
+                v-model="walletsTable.search"
+              >
+                <template v-slot:before>
+                  <q-icon name="search" />
+                </template>
+                <template v-slot:append>
+                  <q-icon
+                    v-if="walletsTable.search !== ''"
+                    name="close"
+                    @click="walletsTable.search = ''"
+                    class="cursor-pointer"
+                  />
+                </template>
+              </q-input>
+            </div>
+            <div class="col-auto q-ml-sm">
+              <q-btn
+                flat
+                color="grey"
+                icon="refresh"
+                @click="getManagedWallets()"
+              >
+                <q-tooltip>Refresh</q-tooltip>
+              </q-btn>
+            </div>
+          </div>
+
           <q-table
             dense
             flat
-            :rows="clientDataList"
+            :rows="walletsList"
             row-key="id"
-            :columns="clientDataTable.columns"
-            v-model:pagination="clientDataTable.pagination"
-            :loading="clientDataTable.loading"
-            @request="getClientData"
+            :columns="walletsTable.columns"
+            v-model:pagination="walletsTable.pagination"
+            :loading="walletsTable.loading"
+            @request="getManagedWallets"
           >
             <template v-slot:header="props">
               <q-tr :props="props">
@@ -220,223 +211,109 @@
             <template v-slot:body="props">
               <q-tr :props="props">
                 <q-td auto-width>
-                  
                   <q-btn
                     flat
                     dense
                     size="xs"
-                    @click="showEditClientDataForm(props.row)"
-                    icon="edit"
-                    color="light-blue"
-                    class="q-mr-sm"
+                    icon="delete"
+                    color="negative"
+                    @click="deleteManagedWallet(props.row.id)"
                   >
-                    <q-tooltip> Edit </q-tooltip>
-                  </q-btn>
-                  
-                  <q-btn
-                    flat
-                    dense
-                    size="xs"
-                    @click="deleteClientData(props.row.id)"
-                    icon="cancel"
-                    color="pink"
-                    class="q-mr-sm"
-                  >
-                    <q-tooltip> Delete </q-tooltip>
+                    <q-tooltip>Remove from registry</q-tooltip>
                   </q-btn>
                 </q-td>
 
                 <q-td v-for="col in props.cols" :key="col.name" :props="props">
-                  <div v-if="col.field == 'updated_at'">
-                    <span v-text="dateFromNow(col.value)"> </span>
+                  <div v-if="col.field === 'include_admin_key'">
+                    <q-chip
+                      dense
+                      :color="col.value ? 'blue-2' : 'grey-3'"
+                      :text-color="col.value ? 'blue-9' : 'grey-7'"
+                      size="sm"
+                    >
+                      ${ col.value ? 'Admin + Invoice' : 'Invoice only' }
+                    </q-chip>
+                  </div>
+                  <div v-else-if="col.field === 'created_at'">
+                    <span v-text="dateFromNow(col.value)"></span>
                   </div>
                   <div v-else>${ col.value }</div>
                 </q-td>
               </q-tr>
+            </template>
+
+            <template v-slot:no-data>
+              <div class="full-width row flex-center text-grey q-gutter-sm q-py-lg">
+                <q-icon name="inbox" size="2em" />
+                <span>No wallets have been created yet.</span>
+              </div>
             </template>
           </q-table>
         </q-card-section>
       </q-card>
     </div>
-    
+
+    <!-- ===================== RIGHT COLUMN ===================== -->
     <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
+
+      <!-- Info card -->
       <q-card>
         <q-card-section>
           <h6 class="text-subtitle1 q-my-none">adminusers</h6>
-          <p>creation and management of users and wallets</p>
+          <p class="text-caption text-grey">creation and management of users and wallets</p>
         </q-card-section>
         <q-card-section class="q-pa-none">
-          <q-separator></q-separator>
+          <q-separator />
           <q-list>
-            <!-- {% include "adminusers/_api_docs.html" %} -->
-            <q-separator></q-separator>
-            <q-expansion-item group="extras" icon="info" label="More info">
+            <q-expansion-item group="extras" icon="info" label="How it works">
               <q-card>
                 <q-card-section>
-                  <p>Some more info about adminusers.</p>
-                  <small
-                    >Created by
-                    <a
-                      class="text-secondary"
-                      href="https://github.com/lnbits"
-                      target="_blank"
-                      >LNbits extension builder</a
-                    >.</small
-                  >
+                  <ol class="text-body2 q-pl-md">
+                    <li>Prepare a CSV with columns <code>wallet_name</code> and <code>include_admin_key</code>.</li>
+                    <li>Upload the CSV using the form on the left.</li>
+                    <li>Click <strong>Process CSV</strong> — wallets are created instantly.</li>
+                    <li>Download the result CSV with wallet credentials.</li>
+                  </ol>
+                  <q-banner class="bg-orange-1 q-mt-sm" rounded dense>
+                    <template v-slot:avatar>
+                      <q-icon name="lock" color="orange" size="xs" />
+                    </template>
+                    <span class="text-caption">
+                      Credentials are only available in the downloaded CSV.
+                      Store it securely.
+                    </span>
+                  </q-banner>
+                </q-card-section>
+              </q-card>
+            </q-expansion-item>
+
+            <q-separator />
+
+            <q-expansion-item group="extras" icon="table_chart" label="CSV format">
+              <q-card>
+                <q-card-section>
+                  <div class="text-caption q-mb-sm">Input CSV example:</div>
+                  <pre class="bg-grey-2 q-pa-sm rounded-borders text-caption">wallet_name,include_admin_key
+Alice,1
+Bob,0
+Charlie,1</pre>
+                  <div class="text-caption q-mt-md q-mb-sm">Output CSV includes:</div>
+                  <ul class="text-caption q-pl-md">
+                    <li><code>wallet_name</code></li>
+                    <li><code>wallet_id</code></li>
+                    <li><code>admin_key</code> (empty if include_admin_key=0)</li>
+                    <li><code>invoice_key</code></li>
+                    <li><code>status</code></li>
+                    <li><code>error</code></li>
+                  </ul>
                 </q-card-section>
               </q-card>
             </q-expansion-item>
           </q-list>
         </q-card-section>
       </q-card>
+
     </div>
-    
 
-    <!--/////////////////////////////////////////////////-->
-    <!--//////////////FORM DIALOG////////////////////////-->
-    <!--/////////////////////////////////////////////////-->
-
-    <q-dialog v-model="settingsFormDialog.show" position="top">
-      <q-card
-        v-if="settingsFormDialog.show"
-        class="q-pa-lg q-pt-xl lnbits__dialog-card q-col-gutter-md"
-      >
-        <span class="text-h5">Settings</span>
-       
-<q-input
-  filled
-  dense
-  v-model.trim="settingsFormDialog.data.name"
-  label="Name"
-  hint="  (optional)"
-></q-input>
- 
-        <div class="row q-mt-lg">
-          <q-btn
-            @click="updateSettings"
-            unelevated
-            color="primary"
-            type="submit"
-            >Update</q-btn
-          >
-          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
-          >
-        </div>
-      </q-card>
-    </q-dialog>
-
-    <q-dialog v-model="ownerDataFormDialog.show" position="top">
-      <q-card
-        v-if="ownerDataFormDialog.show"
-        class="q-pa-lg q-pt-md lnbits__dialog-card q-col-gutter-md"
-      >
-        <span class="text-h5">Owner Data</span>
-
-       
-<q-input
-  filled
-  dense
-  v-model.trim="ownerDataFormDialog.data.name"
-  label="Name"
-  hint="  (optional)"
-></q-input>
-  
-<q-select
-  filled
-  dense
-  emit-value
-  v-model="ownerDataFormDialog.data.wallet"
-  :options="g.user.walletOptions"
-  label="Wallet  (optional) "
-></q-select>
-  
-<q-select
-  filled
-  dense
-  v-model="ownerDataFormDialog.data.currency"
-  label="Currency"
-  hint="  (optional)"
-  :options="currencyOptions"
-></q-select>
-  
-<q-input
-  filled
-  dense
-  v-model.trim="ownerDataFormDialog.data.amount"
-  label="Amount"
-  hint="  (optional)"
-  type="number"
-></q-input>
-  
-<q-checkbox
-  v-model="ownerDataFormDialog.data.paid_down"
-  label="Paid_Down"
-  hint="   (optional)"
-></q-checkbox>
-  
-<q-input
-  filled
-  dense
-  v-model.trim="ownerDataFormDialog.data.date"
-  placeholder="YYYY-MM-DD HH:mm"
-  label="Date"
-  hint="  (optional)"
->
-  <template v-slot:append>
-    <q-icon name="event" class="cursor-pointer">
-      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-        <q-date
-          v-model="ownerDataFormDialog.data.date"
-          mask="YYYY-MM-DD HH:mm"
-        >
-          <div class="row items-center justify-end">
-            <q-btn v-close-popup label="Close" color="primary" flat />
-          </div>
-        </q-date>
-      </q-popup-proxy>
-    </q-icon>
-  </template>
-</q-input>
- 
-        <div class="row q-mt-lg">
-          <q-btn @click="saveOwnerData" unelevated color="primary">
-            <span v-if="ownerDataFormDialog.data.id">Update</span>
-            <span v-else>Create</span>
-          </q-btn>
-          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
-          >
-        </div>
-      </q-card>
-    </q-dialog>
-
-    <q-dialog v-model="clientDataFormDialog.show" position="top">
-      <q-card
-        v-if="clientDataFormDialog.show"
-        class="q-pa-lg q-pt-md lnbits__dialog-card q-col-gutter-md"
-      >
-        <span class="text-h5">Client Data</span>
-
-       
-<q-input
-  filled
-  dense
-  v-model.trim="clientDataFormDialog.data.name"
-  label="Name"
-  hint="  (optional)"
-></q-input>
- 
-        <div class="row q-mt-lg">
-          <q-btn @click="saveClientData" unelevated color="primary">
-            <span v-if="clientDataFormDialog.data.id">Update</span>
-            <span v-else>Create</span>
-          </q-btn>
-          <q-btn v-close-popup flat color="grey" class="q-ml-auto"
-            >Cancel</q-btn
-          >
-        </div>
-      </q-card>
-    </q-dialog>
   </div>
 </template>

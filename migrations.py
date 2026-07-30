@@ -1,6 +1,5 @@
-# the migration file is where you build your database tables
-# If you create a new release for your extension ,
-# remember the migration file is like a blockchain, never edit only add!
+# The migration file is where you build your database tables.
+# Migrations are append-only — never edit existing migrations, only add new ones.
 
 empty_dict: dict[str, str] = {}
 
@@ -9,7 +8,6 @@ async def m001_extension_settings(db):
     """
     Initial settings table.
     """
-
     await db.execute(
         f"""
         CREATE TABLE adminusers.extension_settings (
@@ -21,42 +19,19 @@ async def m001_extension_settings(db):
     )
 
 
-
-
-async def m002_owner_data(db):
+async def m002_managed_wallets(db):
     """
-    Initial owner data table.
+    Table to track wallets created via the adminusers extension.
+    Stores only metadata — admin/invoice keys are NOT persisted here,
+    they are returned once at creation time via the CSV download.
     """
-
     await db.execute(
         f"""
-        CREATE TABLE adminusers.owner_data (
+        CREATE TABLE adminusers.managed_wallets (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
-            name TEXT,
-            wallet TEXT,
-            currency TEXT,
-            amount INT,
-            paid_down BOOLEAN,
-            date TIMESTAMP,
-            created_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now},
-            updated_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now}
-        );
-    """
-    )
-
-
-async def m003_client_data(db):
-    """
-    Initial client data table.
-    """
-
-    await db.execute(
-        f"""
-        CREATE TABLE adminusers.client_data (
-            id TEXT PRIMARY KEY,
-            owner_data_id TEXT NOT NULL,
-            name TEXT,
+            wallet_name TEXT NOT NULL,
+            include_admin_key BOOLEAN NOT NULL DEFAULT false,
             created_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now},
             updated_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now}
         );

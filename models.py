@@ -4,102 +4,77 @@ from lnbits.db import FilterModel
 from pydantic import BaseModel, Field
 
 
-########################### Owner Data ############################
-class CreateOwnerData(BaseModel):
-    name: str | None
-    wallet: str | None
-    currency: str | None = "sat"
-    amount: int | None
-    paid_down: bool | None
-    date: datetime | None
-    
+########################### Managed Wallets ############################
 
 
-class OwnerData(BaseModel):
-    id: str
-    user_id: str
-    name: str | None
-    wallet: str | None
-    currency: str | None = "sat"
-    amount: int | None
-    paid_down: bool | None
-    date: datetime | None
-    
+class ManagedWallet(BaseModel):
+    """Metadata record for a wallet created by this extension."""
+
+    id: str  # wallet_id from LNbits core
+    user_id: str  # admin account user_id
+    wallet_name: str
+    include_admin_key: bool = False
+
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-
-
-class OwnerDataFilters(FilterModel):
-    __search_fields__ = [
-        "name","wallet","currency","amount","paid_down","date",
-    ]
+class ManagedWalletFilters(FilterModel):
+    __search_fields__ = ["wallet_name", "id"]
 
     __sort_fields__ = [
-        "name",
-        "wallet",
-        "currency",
-        "amount",
-        "paid_down",
-        "date",
-        
+        "wallet_name",
         "created_at",
         "updated_at",
     ]
 
-    created_at: datetime | None
-    updated_at: datetime | None
+    wallet_name: str | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
 
 
-################################# Client Data ###########################
+########################### CSV Processing ############################
 
 
-class CreateClientData(BaseModel):
-    name: str | None
-    
+class CsvInputRow(BaseModel):
+    """A single parsed row from the uploaded CSV."""
+
+    wallet_name: str
+    include_admin_key: bool = False
 
 
-class ClientData(BaseModel):
-    id: str
-    owner_data_id: str
-    name: str | None
-    
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+class WalletBatchResultRow(BaseModel):
+    """Result for a single wallet from the batch operation."""
+
+    wallet_name: str
+    wallet_id: str | None = None
+    admin_key: str | None = None
+    invoice_key: str | None = None
+    status: str  # "success" | "error"
+    error: str | None = None
 
 
+class WalletBatchResult(BaseModel):
+    """Full result of a batch wallet creation operation."""
 
-
-class ClientDataFilters(FilterModel):
-    __search_fields__ = [
-        "name",
-    ]
-
-    __sort_fields__ = [
-        "name",
-        
-        "created_at",
-        "updated_at",
-    ]
-
-    created_at: datetime | None
-    updated_at: datetime | None
+    total: int
+    success_count: int
+    error_count: int
+    rows: list[WalletBatchResultRow]
 
 
 ############################ Settings #############################
+
+
 class ExtensionSettings(BaseModel):
-    name: str | None
-    
+    name: str | None = None
 
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @classmethod
     def is_admin_only(cls) -> bool:
-        return bool("True" == "True")
+        return True
 
 
 class UserExtensionSettings(ExtensionSettings):
     id: str
-
-

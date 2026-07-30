@@ -1,67 +1,61 @@
 window.PageAdminusers = {
   template: '#page-adminusers',
   delimiters: ['${', '}'],
+
   data: function () {
     return {
-      currencyOptions: ['sat'],
-      settingsFormDialog: {
-        show: false,
-        data: {}
+      // ── Upload state ──
+      uploadState: {
+        file: null,
+        loading: false
       },
 
-      ownerDataFormDialog: {
-        show: false,
-        data: {
-          name: null,
-          wallet: null,
-          currency: "sat",
-          amount: null,
-          paid_down: null,
-          date: null,
-          
-        }
-      },
-      ownerDataList: [],
-      ownerDataTable: {
+      // ── Batch result returned from the API ──
+      batchResult: null,
+
+      // ── Error table columns ──
+      errorColumns: [
+        {name: 'wallet_name', label: 'Wallet Name', field: 'wallet_name', align: 'left'},
+        {name: 'error', label: 'Error', field: 'error', align: 'left'}
+      ],
+
+      // ── Wallet registry (history) table ──
+      walletsList: [],
+      walletsTable: {
         search: '',
         loading: false,
         columns: [
-          {"name": "name", "align": "left", "label": "Name", "field": "name", "sortable": true},
-          {"name": "wallet", "align": "left", "label": "Wallet", "field": "wallet", "sortable": true},
-          {"name": "currency", "align": "left", "label": "Currency", "field": "currency", "sortable": true},
-          {"name": "amount", "align": "left", "label": "Amount", "field": "amount", "sortable": true},
-          {"name": "paid_down", "align": "left", "label": "Paid_Down", "field": "paid_down", "sortable": true},
-          {"name": "date", "align": "left", "label": "Date", "field": "date", "sortable": true},
-          {"name": "updated_at", "align": "left", "label": "Updated At", "field": "updated_at", "sortable": true},
-          {"name": "id", "align": "left", "label": "ID", "field": "id", "sortable": true},
-          
+          {
+            name: 'wallet_name',
+            label: 'Wallet Name',
+            field: 'wallet_name',
+            align: 'left',
+            sortable: true
+          },
+          {
+            name: 'id',
+            label: 'Wallet ID',
+            field: 'id',
+            align: 'left',
+            sortable: false
+          },
+          {
+            name: 'include_admin_key',
+            label: 'Key Type',
+            field: 'include_admin_key',
+            align: 'left',
+            sortable: false
+          },
+          {
+            name: 'created_at',
+            label: 'Created',
+            field: 'created_at',
+            align: 'left',
+            sortable: true
+          }
         ],
         pagination: {
-          sortBy: 'updated_at',
-          rowsPerPage: 10,
-          page: 1,
-          descending: true,
-          rowsNumber: 10
-        }
-      },
-
-      clientDataFormDialog: {
-        show: false,
-        ownerData: {label: 'All Owner Data', value: ''},
-        data: {}
-      },
-      clientDataList: [],
-      clientDataTable: {
-        search: '',
-        loading: false,
-        columns: [
-          {"name": "name", "align": "left", "label": "Name", "field": "name", "sortable": true},
-          {"name": "updated_at", "align": "left", "label": "Updated At", "field": "updated_at", "sortable": true},
-          {"name": "id", "align": "left", "label": "ID", "field": "id", "sortable": true},
-          
-        ],
-        pagination: {
-          sortBy: 'updated_at',
+          sortBy: 'created_at',
           rowsPerPage: 10,
           page: 1,
           descending: true,
@@ -70,251 +64,175 @@ window.PageAdminusers = {
       }
     }
   },
+
+  computed: {
+    errorRows() {
+      if (!this.batchResult) return []
+      return this.batchResult.rows.filter(r => r.status === 'error')
+    }
+  },
+
   watch: {
-    'ownerDataTable.search': {
+    'walletsTable.search': {
       handler() {
-        const props = {}
-        if (this.ownerDataTable.search) {
-          props['search'] = this.ownerDataTable.search
-        }
-        this.getOwnerData()
-      }
-    },
-    'clientDataTable.search': {
-      handler() {
-        const props = {}
-        if (this.clientDataTable.search) {
-          props['search'] = this.clientDataTable.search
-        }
-        this.getClientData()
-      }
-    },
-    'clientDataFormDialog.ownerData.value': {
-      handler() {
-        const props = {}
-        if (this.clientDataTable.search) {
-          props['search'] = this.clientDataTable.search
-        }
-        this.getClientData()
+        this.getManagedWallets()
       }
     }
   },
 
   methods: {
-    //////////////// Settings ////////////////////////
-    async updateSettings() {
-      
-      try {
-        const data = {...this.settingsFormDialog.data}
 
-        await LNbits.api.request(
-          'PUT',
-          '/adminusers/api/v1/settings',
-          null,
-          data
-        )
-        this.settingsFormDialog.show = false
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
-    },
-    async getSettings() {
-      
-      try {
-        const {data} = await LNbits.api.request(
-          'GET',
-          '/adminusers/api/v1/settings',
-          null
-        )
-        this.settingsFormDialog.data = data
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
-    },
-    async showSettingsDataForm() {
-      await this.getSettings()
-      this.settingsFormDialog.show = true
-    },
+    // ──────────────────────────────────────────────
+    //  CSV Upload & Processing
+    // ──────────────────────────────────────────────
 
-    //////////////// Owner Data ////////////////////////
-    async showNewOwnerDataForm() {
-      this.ownerDataFormDialog.data = {
-          name: null,
-          wallet: null,
-          currency: "sat",
-          amount: null,
-          paid_down: null,
-          date: null,
-          
-      }
-      this.ownerDataFormDialog.show = true
-    },
-    async showEditOwnerDataForm(data) {
-      this.ownerDataFormDialog.data = {...data}
-      this.ownerDataFormDialog.show = true
-    },
-    async saveOwnerData() {
-      
-      try {
-        const data = {extra: {}, ...this.ownerDataFormDialog.data}
-        const method = data.id ? 'PUT' : 'POST'
-        const entry = data.id ? `/${data.id}` : ''
-        await LNbits.api.request(
-          method,
-          '/adminusers/api/v1/owner_data' + entry,
-          null,
-          data
-        )
-        this.getOwnerData()
-        this.ownerDataFormDialog.show = false
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
-    },
+    async uploadCSV() {
+      if (!this.uploadState.file) return
 
-    async getOwnerData(props) {
-      
+      this.uploadState.loading = true
+      this.batchResult = null
+
       try {
-        this.ownerDataTable.loading = true
-        const params = LNbits.utils.prepareFilterQuery(
-          this.ownerDataTable,
-          props
-        )
-        const {data} = await LNbits.api.request(
-          'GET',
-          `/adminusers/api/v1/owner_data/paginated?${params}`,
-          null
-        )
-        this.ownerDataList = data.data
-        this.ownerDataTable.pagination.rowsNumber = data.total
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      } finally {
-        this.ownerDataTable.loading = false
-      }
-    },
-    async deleteOwnerData(ownerDataId) {
-      await LNbits.utils
-        .confirmDialog('Are you sure you want to delete this Owner Data?')
-        .onOk(async () => {
-          try {
-            
-            await LNbits.api.request(
-              'DELETE',
-              '/adminusers/api/v1/owner_data/' + ownerDataId,
-              null
-            )
-            await this.getOwnerData()
-          } catch (error) {
-            LNbits.utils.notifyApiError(error)
-          }
+        const formData = new FormData()
+        formData.append('file', this.uploadState.file)
+
+        const response = await fetch('/adminusers/api/v1/wallets/upload', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': this.g.user.wallets[0].adminkey
+          },
+          body: formData
         })
-    },
-    async exportOwnerDataCSV() {
-      await LNbits.utils.exportCSV(
-        this.ownerDataTable.columns,
-        this.ownerDataList,
-        'owner_data_' + new Date().toISOString().slice(0, 10) + '.csv'
-      )
-    },
 
-    //////////////// Client Data ////////////////////////
-    async showEditClientDataForm(data) {
-      this.clientDataFormDialog.data = {...data}
-      this.clientDataFormDialog.show = true
-    },
-    async saveClientData() {
-      
-      try {
-        const data = {extra: {}, ...this.clientDataFormDialog.data}
-        const method = data.id ? 'PUT' : 'POST'
-        const entry = data.id ? `/${data.id}` : ''
-        await LNbits.api.request(
-          method,
-          '/adminusers/api/v1/client_data' + entry,
-          null,
-          data
-        )
-        this.getClientData()
-        this.clientDataFormDialog.show = false
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
-    },
-
-    async getClientData(props) {
-      
-      try {
-        this.clientDataTable.loading = true
-        let params = LNbits.utils.prepareFilterQuery(
-          this.clientDataTable,
-          props
-        )
-        const ownerDataId = this.clientDataFormDialog.ownerData.value
-        if (ownerDataId) {
-          params += `&owner_data_id=${ownerDataId}`
+        if (!response.ok) {
+          const err = await response.json()
+          throw new Error(err.detail || 'Upload failed.')
         }
+
+        this.batchResult = await response.json()
+        await this.getManagedWallets()
+
+        if (this.batchResult.success_count > 0) {
+          this.$q.notify({
+            type: 'positive',
+            message: `${this.batchResult.success_count} wallet(s) created successfully.`
+          })
+        }
+        if (this.batchResult.error_count > 0) {
+          this.$q.notify({
+            type: 'warning',
+            message: `${this.batchResult.error_count} wallet(s) failed. See the error table.`
+          })
+        }
+
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          message: error.message || 'An error occurred while processing the CSV.'
+        })
+      } finally {
+        this.uploadState.loading = false
+        this.uploadState.file = null
+      }
+    },
+
+    // ──────────────────────────────────────────────
+    //  CSV Download (generated client-side)
+    // ──────────────────────────────────────────────
+
+    downloadResultCSV() {
+      if (!this.batchResult) return
+
+      const headers = ['wallet_name', 'wallet_id', 'admin_key', 'invoice_key', 'status', 'error']
+      const rows = this.batchResult.rows.map(r => [
+        r.wallet_name || '',
+        r.wallet_id || '',
+        r.admin_key || '',
+        r.invoice_key || '',
+        r.status || '',
+        r.error || ''
+      ])
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'})
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'wallets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.csv'
+      link.click()
+      URL.revokeObjectURL(url)
+    },
+
+    downloadTemplate() {
+      const content = 'wallet_name,include_admin_key\nAlice,1\nBob,0\nCharlie,1\n'
+      const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'})
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'wallets_template.csv'
+      link.click()
+      URL.revokeObjectURL(url)
+    },
+
+    // ──────────────────────────────────────────────
+    //  Wallet Registry (History)
+    // ──────────────────────────────────────────────
+
+    async getManagedWallets(props) {
+      try {
+        this.walletsTable.loading = true
+        const params = LNbits.utils.prepareFilterQuery(this.walletsTable, props)
         const {data} = await LNbits.api.request(
           'GET',
-          `/adminusers/api/v1/client_data/paginated?${params}`,
+          `/adminusers/api/v1/wallets/paginated?${params}`,
           null
         )
-        this.clientDataList = data.data
-        this.clientDataTable.pagination.rowsNumber = data.total
+        this.walletsList = data.data
+        this.walletsTable.pagination.rowsNumber = data.total
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       } finally {
-        this.clientDataTable.loading = false
+        this.walletsTable.loading = false
       }
     },
-    async deleteClientData(clientDataId) {
+
+    async deleteManagedWallet(walletId) {
       await LNbits.utils
-        .confirmDialog('Are you sure you want to delete this Client Data?')
+        .confirmDialog(
+          'Remove this wallet from the registry?\n\n' +
+          'Note: this does NOT delete the actual wallet from LNbits.'
+        )
         .onOk(async () => {
           try {
-            
             await LNbits.api.request(
               'DELETE',
-              '/adminusers/api/v1/client_data/' + clientDataId,
+              '/adminusers/api/v1/wallets/' + walletId,
               null
             )
-            await this.getClientData()
+            await this.getManagedWallets()
+            this.$q.notify({type: 'positive', message: 'Wallet removed from registry.'})
           } catch (error) {
             LNbits.utils.notifyApiError(error)
           }
         })
     },
 
-    async exportClientDataCSV() {
-      await LNbits.utils.exportCSV(
-        this.clientDataTable.columns,
-        this.clientDataList,
-        'client_data_' + new Date().toISOString().slice(0, 10) + '.csv'
-      )
-    },
+    // ──────────────────────────────────────────────
+    //  Utilities
+    // ──────────────────────────────────────────────
 
-    //////////////// Utils ////////////////////////
     dateFromNow(date) {
       return moment(date).fromNow()
-    },
-    async fetchCurrencies() {
-      try {
-        const response = await LNbits.api.request('GET', '/api/v1/currencies')
-        this.currencyOptions = ['sat', ...response.data]
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
     }
   },
-  ///////////////////////////////////////////////////
-  //////LIFECYCLE FUNCTIONS RUNNING ON PAGE LOAD/////
-  ///////////////////////////////////////////////////
-  async created() {
-    this.fetchCurrencies()
-    this.getOwnerData()
-    this.getClientData()
 
-    
-    
+  // ──────────────────────────────────────────────
+  //  Lifecycle
+  // ──────────────────────────────────────────────
+  async created() {
+    await this.getManagedWallets()
   }
 }
