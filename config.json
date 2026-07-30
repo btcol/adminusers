@@ -1,6 +1,6 @@
 {
   "name": "adminwallets",
-  "short_description": "creation and management of users and wallets",
+  "short_description": "Creation and management of wallets",
   "tile": "/adminwallets/static/image/adminwallets.png",
   "version": "0.1.0",
   "min_lnbits_version": "1.4.2",
