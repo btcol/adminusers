@@ -1,4 +1,4 @@
-<template id="page-adminusers">
+<template id="page-adminwallets">
   <div class="row q-col-gutter-md">
 
     <!-- ===================== LEFT COLUMN ===================== -->
@@ -259,7 +259,7 @@
       <!-- Info card -->
       <q-card>
         <q-card-section>
-          <h6 class="text-subtitle1 q-my-none">adminusers</h6>
+          <h6 class="text-subtitle1 q-my-none">adminwallets</h6>
           <p class="text-caption text-grey">creation and management of users and wallets</p>
         </q-card-section>
         <q-card-section class="q-pa-none">

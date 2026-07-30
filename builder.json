@@ -1,6 +1,6 @@
 {
-    "id": "adminusers",
-    "name": "adminusers",
+    "id": "adminwallets",
+    "name": "adminwallets",
     "stub_version": "v0.3.0",
     "short_description": "creation and management of users and wallets",
     "description": "It allows the automatic and bulk creation of users and wallets. For example, if a node administrator needs to create multiple wallets from a list of users, the application creates the wallets and collects the APIs and wallet IDs automatically, avoiding the need to perform this operation manually.",

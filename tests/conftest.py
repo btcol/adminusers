@@ -5,8 +5,8 @@ from lnbits.core import migrations as core_migrations  # type: ignore[import]
 from lnbits.core.db import db as core_db
 from lnbits.core.helpers import run_migration
 
-import adminusers.migrations as ext_migrations  # type: ignore[import]
-from adminusers.crud import db  # type: ignore[import]
+import adminwallets.migrations as ext_migrations  # type: ignore[import]
+from adminwallets.crud import db  # type: ignore[import]
 
 
 @pytest_asyncio.fixture(scope="session", autouse=True)
@@ -19,4 +19,4 @@ async def init_ext():
     if os.path.isfile(db.path):
         os.remove(db.path)
     async with db.connect() as conn:
-        await run_migration(conn, ext_migrations, "adminusers")
+        await run_migration(conn, ext_migrations, "adminwallets")

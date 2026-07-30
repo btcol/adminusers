@@ -10,7 +10,7 @@ async def m001_extension_settings(db):
     """
     await db.execute(
         f"""
-        CREATE TABLE adminusers.extension_settings (
+        CREATE TABLE adminwallets.extension_settings (
             id TEXT NOT NULL,
             name TEXT,
             updated_at TIMESTAMP NOT NULL DEFAULT {db.timestamp_now}
@@ -21,13 +21,13 @@ async def m001_extension_settings(db):
 
 async def m002_managed_wallets(db):
     """
-    Table to track wallets created via the adminusers extension.
+    Table to track wallets created via the adminwallets extension.
     Stores only metadata — admin/invoice keys are NOT persisted here,
     they are returned once at creation time via the CSV download.
     """
     await db.execute(
         f"""
-        CREATE TABLE adminusers.managed_wallets (
+        CREATE TABLE adminwallets.managed_wallets (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             wallet_name TEXT NOT NULL,

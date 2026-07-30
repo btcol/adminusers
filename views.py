@@ -1,15 +1,15 @@
-# Description: Page endpoints for the adminusers extension.
+# Description: Page endpoints for the adminwallets extension.
 
 from fastapi import APIRouter, Depends
 from lnbits.core.views.generic import index
 from lnbits.decorators import check_admin
 from lnbits.helpers import template_renderer
 
-adminusers_generic_router = APIRouter()
+adminwallets_generic_router = APIRouter()
 
 
-def adminusers_renderer():
-    return template_renderer(["adminusers/templates"])
+def adminwallets_renderer():
+    return template_renderer(["adminwallets/templates"])
 
 
 #######################################
@@ -18,6 +18,6 @@ def adminusers_renderer():
 
 
 # Admin-only page — requires admin privileges
-adminusers_generic_router.add_api_route(
+adminwallets_generic_router.add_api_route(
     "/", methods=["GET"], endpoint=index, dependencies=[Depends(check_admin)]
 )

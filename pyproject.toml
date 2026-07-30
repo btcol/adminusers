@@ -1,10 +1,10 @@
 [project]
-name = "adminusers"
+name = "adminwallets"
 version = "0.1.0"
 requires-python = ">=3.10,<3.13"
 description = "<<creation and management of users and wallets>>"
 authors = []
-urls = { Homepage = "https://lnbits.com", Repository = "https://github.com/lnbits/adminusers" }
+urls = { Homepage = "https://lnbits.com", Repository = "https://github.com/lnbits/adminwallets" }
 dependencies = [ "lnbits>=1.4.0" ]
 
 [tool.poetry]

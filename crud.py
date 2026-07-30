@@ -1,4 +1,4 @@
-# Description: CRUD operations for the adminusers extension database.
+# Description: CRUD operations for the adminwallets extension database.
 
 from lnbits.db import Database, Filters, Page
 from lnbits.helpers import urlsafe_short_hash
@@ -10,7 +10,7 @@ from .models import (
     UserExtensionSettings,
 )
 
-db = Database("ext_adminusers")
+db = Database("ext_adminwallets")
 
 
 ########################### Managed Wallets ############################
@@ -28,7 +28,7 @@ async def create_managed_wallet(
         wallet_name=wallet_name,
         include_admin_key=include_admin_key,
     )
-    await db.insert("adminusers.managed_wallets", record)
+    await db.insert("adminwallets.managed_wallets", record)
     return record
 
 
@@ -38,7 +38,7 @@ async def get_managed_wallet(
 ) -> ManagedWallet | None:
     return await db.fetchone(
         """
-            SELECT * FROM adminusers.managed_wallets
+            SELECT * FROM adminwallets.managed_wallets
             WHERE id = :id AND user_id = :user_id
         """,
         {"id": wallet_id, "user_id": user_id},
@@ -51,7 +51,7 @@ async def get_managed_wallets_paginated(
     filters: Filters[ManagedWalletFilters] | None = None,
 ) -> Page[ManagedWallet]:
     return await db.fetch_page(
-        "SELECT * FROM adminusers.managed_wallets",
+        "SELECT * FROM adminwallets.managed_wallets",
         where=["user_id = :user_id"],
         values={"user_id": user_id},
         filters=filters,
@@ -62,7 +62,7 @@ async def get_managed_wallets_paginated(
 async def delete_managed_wallet(user_id: str, wallet_id: str) -> None:
     await db.execute(
         """
-            DELETE FROM adminusers.managed_wallets
+            DELETE FROM adminwallets.managed_wallets
             WHERE id = :id AND user_id = :user_id
         """,
         {"id": wallet_id, "user_id": user_id},
@@ -76,7 +76,7 @@ async def create_extension_settings(
     user_id: str, data: ExtensionSettings
 ) -> ExtensionSettings:
     settings = UserExtensionSettings(**data.dict(), id=user_id)
-    await db.insert("adminusers.extension_settings", settings)
+    await db.insert("adminwallets.extension_settings", settings)
     return settings
 
 
@@ -85,7 +85,7 @@ async def get_extension_settings(
 ) -> ExtensionSettings | None:
     return await db.fetchone(
         """
-            SELECT * FROM adminusers.extension_settings
+            SELECT * FROM adminwallets.extension_settings
             WHERE id = :user_id
         """,
         {"user_id": user_id},
@@ -97,5 +97,5 @@ async def update_extension_settings(
     user_id: str, data: ExtensionSettings
 ) -> ExtensionSettings:
     settings = UserExtensionSettings(**data.dict(), id=user_id)
-    await db.update("adminusers.extension_settings", settings)
+    await db.update("adminwallets.extension_settings", settings)
     return settings

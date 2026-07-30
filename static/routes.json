@@ -1,14 +1,14 @@
 [
   {
-    "path": "/adminusers/",
+    "path": "/adminwallets/",
     "name": "PageAdminusers",
-    "template": "/adminusers/static/index.vue",
-    "component": "/adminusers/static/index.js"
+    "template": "/adminwallets/static/index.vue",
+    "component": "/adminwallets/static/index.js"
   },
   {
-    "path": "/adminusers/:id",
+    "path": "/adminwallets/:id",
     "name": "PageAdminusersPublic",
-    "template": "/adminusers/static/public_page.vue",
-    "component": "/adminusers/static/public_page.js"
+    "template": "/adminwallets/static/public_page.vue",
+    "component": "/adminwallets/static/public_page.js"
   }
 ]

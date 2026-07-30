@@ -14,14 +14,14 @@ from loguru import logger
 
 async def wait_for_paid_invoices():
     invoice_queue = asyncio.Queue()
-    register_invoice_listener(invoice_queue, "ext_adminusers")
+    register_invoice_listener(invoice_queue, "ext_adminwallets")
     while True:
         payment = await invoice_queue.get()
         await on_invoice_paid(payment)
 
 
 async def on_invoice_paid(payment: Payment) -> None:
-    if payment.extra.get("tag") != "adminusers":
+    if payment.extra.get("tag") != "adminwallets":
         return
     # No payment processing needed for this extension.
-    logger.debug(f"adminusers: ignored payment {payment.payment_hash}")
+    logger.debug(f"adminwallets: ignored payment {payment.payment_hash}")

@@ -2,7 +2,7 @@ from uuid import uuid4
 
 import pytest
 
-from adminusers.crud import (  # type: ignore[import]
+from adminwallets.crud import (  # type: ignore[import]
     create_owner_data,
     delete_owner_data,
     get_owner_data,
@@ -11,7 +11,7 @@ from adminusers.crud import (  # type: ignore[import]
     get_owner_data_paginated,
     update_owner_data,
 )
-from adminusers.models import (  # type: ignore[import]
+from adminwallets.models import (  # type: ignore[import]
     CreateOwnerData,
     OwnerData,
 )

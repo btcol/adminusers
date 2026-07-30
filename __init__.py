@@ -6,27 +6,27 @@ from loguru import logger
 
 from .crud import db
 from .tasks import wait_for_paid_invoices
-from .views import adminusers_generic_router
-from .views_api import adminusers_api_router
+from .views import adminwallets_generic_router
+from .views_api import adminwallets_api_router
 
-adminusers_ext: APIRouter = APIRouter(
-    prefix="/adminusers", tags=["adminusers"]
+adminwallets_ext: APIRouter = APIRouter(
+    prefix="/adminwallets", tags=["adminwallets"]
 )
-adminusers_ext.include_router(adminusers_generic_router)
-adminusers_ext.include_router(adminusers_api_router)
+adminwallets_ext.include_router(adminwallets_generic_router)
+adminwallets_ext.include_router(adminwallets_api_router)
 
 
-adminusers_static_files = [
+adminwallets_static_files = [
     {
-        "path": "/adminusers/static",
-        "name": "adminusers_static",
+        "path": "/adminwallets/static",
+        "name": "adminwallets_static",
     }
 ]
 
 scheduled_tasks: list[asyncio.Task] = []
 
 
-def adminusers_stop():
+def adminwallets_stop():
     for task in scheduled_tasks:
         try:
             task.cancel()
@@ -34,15 +34,15 @@ def adminusers_stop():
             logger.warning(ex)
 
 
-def adminusers_start():
-    task = create_permanent_unique_task("ext_adminusers", wait_for_paid_invoices)
+def adminwallets_start():
+    task = create_permanent_unique_task("ext_adminwallets", wait_for_paid_invoices)
     scheduled_tasks.append(task)
 
 
 __all__ = [
     "db",
-    "adminusers_ext",
-    "adminusers_start",
-    "adminusers_static_files",
-    "adminusers_stop",
+    "adminwallets_ext",
+    "adminwallets_start",
+    "adminwallets_static_files",
+    "adminwallets_stop",
 ]

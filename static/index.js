@@ -1,5 +1,5 @@
 window.PageAdminusers = {
-  template: '#page-adminusers',
+  template: '#page-adminwallets',
   delimiters: ['${', '}'],
 
   data: function () {
@@ -96,7 +96,7 @@ window.PageAdminusers = {
         const formData = new FormData()
         formData.append('file', this.uploadState.file)
 
-        const response = await fetch('/adminusers/api/v1/wallets/upload', {
+        const response = await fetch('/adminwallets/api/v1/wallets/upload', {
           method: 'POST',
           headers: {
             'X-API-KEY': this.g.user.wallets[0].adminkey
@@ -187,7 +187,7 @@ window.PageAdminusers = {
         const params = LNbits.utils.prepareFilterQuery(this.walletsTable, props)
         const {data} = await LNbits.api.request(
           'GET',
-          `/adminusers/api/v1/wallets/paginated?${params}`,
+          `/adminwallets/api/v1/wallets/paginated?${params}`,
           null
         )
         this.walletsList = data.data
@@ -209,7 +209,7 @@ window.PageAdminusers = {
           try {
             await LNbits.api.request(
               'DELETE',
-              '/adminusers/api/v1/wallets/' + walletId,
+              '/adminwallets/api/v1/wallets/' + walletId,
               null
             )
             await this.getManagedWallets()
