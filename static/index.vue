@@ -21,10 +21,7 @@
       <!-- ── CSV Upload card ── -->
       <q-card id="uploadCard">
         <q-card-section>
-          <div class="row items-center q-mb-md">
-            <q-icon name="upload_file" size="md" color="primary" />
-            <div style="font-size: 20px; font-weight: 500; margin-left: 12px; letter-spacing: normal;">Upload CSV File</div>
-          </div>
+
 
           <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-primary)">
             <template v-slot:avatar>
@@ -295,7 +292,7 @@
       <q-card>
         <q-card-section>
           <h6 class="text-subtitle1 q-my-none">adminwallets</h6>
-          <p class="text-caption text-grey">creation and management of users and wallets</p>
+          <p class="text-caption text-grey">Creation and management of wallets</p>
         </q-card-section>
         <q-card-section class="q-pa-none">
           <q-separator />
