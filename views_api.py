@@ -174,8 +174,6 @@ async def api_delete_managed_wallet(
     if not wallet:
          raise HTTPException(HTTPStatus.NOT_FOUND, "Core wallet not found.")
 
-    if wallet.user == account.id:
-         raise HTTPException(HTTPStatus.BAD_REQUEST, "Cannot delete your own admin account wallets.")
 
     balance_msat = wallet.balance_msat
     if balance_msat > 0:

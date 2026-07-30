@@ -105,78 +105,6 @@
         </q-card-section>
       </q-card>
 
-      <!-- ── Result card (shown after processing) ── -->
-      <q-card id="resultCard" v-if="batchResult">
-        <q-card-section>
-          <div class="row items-center q-mb-md">
-            <div class="col text-h6">
-              <q-icon name="summarize" class="q-mr-sm" />
-              Processing Result
-            </div>
-            <div class="col-auto">
-              <q-btn
-                id="downloadResultBtn"
-                unelevated
-                color="positive"
-                icon="file_download"
-                label="Download CSV"
-                @click="downloadResultCSV"
-              />
-            </div>
-          </div>
-
-          <!-- Summary chips -->
-          <div class="row q-gutter-sm q-mb-md">
-            <q-chip icon="check_circle" color="positive" text-color="white">
-              ${ batchResult.success_count } created
-            </q-chip>
-            <q-chip
-              v-if="batchResult.error_count > 0"
-              icon="error"
-              color="negative"
-              text-color="white"
-            >
-              ${ batchResult.error_count } failed
-            </q-chip>
-            <q-chip icon="list" color="grey-7" text-color="white">
-              ${ batchResult.total } total
-            </q-chip>
-            <q-chip
-              v-if="batchResult.rows.some(r => r.initial_balance > 0)"
-              icon="bolt"
-              color="deep-orange"
-              text-color="white"
-            >
-              ${ batchResult.rows.reduce((s, r) => s + (r.initial_balance || 0), 0) } sats funded
-            </q-chip>
-          </div>
-
-          <!-- Error rows table -->
-          <div v-if="batchResult.error_count > 0">
-            <div class="text-subtitle2 q-mb-sm text-negative">
-              <q-icon name="warning" class="q-mr-xs" />Failed rows
-            </div>
-            <q-table
-              dense
-              flat
-              :rows="errorRows"
-              :columns="errorColumns"
-              row-key="wallet_name"
-              hide-bottom
-            />
-          </div>
-
-          <q-banner rounded class="q-mt-md bg-transparent" style="border: 1px solid orange">
-            <template v-slot:avatar>
-              <q-icon name="lock" color="orange" />
-            </template>
-            <span class="text-caption">
-              Wallet credentials are included in the downloaded CSV only.
-              They are not stored or shown here for security reasons.
-            </span>
-          </q-banner>
-        </q-card-section>
-      </q-card>
 
       <!-- ── Wallet History card ── -->
       <div class="q-mt-md">
@@ -350,4 +278,113 @@ Charlie,1,0</pre>
     </div>
 
   </div>
+</template>
+
+<!-- ── Result Modal (persistent: cannot be dismissed by clicking outside) ── -->
+<template v-if="resultDialogOpen">
+  <q-dialog
+    v-model="resultDialogOpen"
+    persistent
+    transition-show="scale"
+    transition-hide="scale"
+  >
+    <q-card style="min-width: 480px; max-width: 95vw">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">
+          <q-icon name="summarize" class="q-mr-sm" color="primary" />
+          Processing Result
+        </div>
+        <q-space />
+        <q-chip
+          v-if="!resultDownloaded"
+          dense
+          color="orange"
+          text-color="white"
+          icon="warning"
+          label="Download before closing"
+        />
+        <q-chip
+          v-else
+          dense
+          color="positive"
+          text-color="white"
+          icon="check"
+          label="Downloaded"
+        />
+      </q-card-section>
+
+      <q-card-section>
+        <!-- Summary chips -->
+        <div class="row q-gutter-sm q-mb-md">
+          <q-chip icon="check_circle" color="positive" text-color="white">
+            ${ batchResult && batchResult.success_count } created
+          </q-chip>
+          <q-chip
+            v-if="batchResult && batchResult.error_count > 0"
+            icon="error"
+            color="negative"
+            text-color="white"
+          >
+            ${ batchResult.error_count } failed
+          </q-chip>
+          <q-chip icon="list" color="grey-7" text-color="white">
+            ${ batchResult && batchResult.total } total
+          </q-chip>
+          <q-chip
+            v-if="batchResult && batchResult.rows.some(r => r.initial_balance > 0)"
+            icon="bolt"
+            color="deep-orange"
+            text-color="white"
+          >
+            ${ batchResult && batchResult.rows.reduce((s, r) => s + (r.initial_balance || 0), 0) } sats funded
+          </q-chip>
+        </div>
+
+        <!-- Error rows table -->
+        <div v-if="batchResult && batchResult.error_count > 0" class="q-mb-md">
+          <div class="text-subtitle2 q-mb-sm text-negative">
+            <q-icon name="warning" class="q-mr-xs" />Failed rows
+          </div>
+          <q-table
+            dense
+            flat
+            :rows="errorRows"
+            :columns="errorColumns"
+            row-key="wallet_name"
+            hide-bottom
+          />
+        </div>
+
+        <q-banner rounded class="bg-transparent" style="border: 1px solid orange">
+          <template v-slot:avatar>
+            <q-icon name="lock" color="orange" />
+          </template>
+          <span class="text-caption">
+            Las credenciales de las wallets solo están disponibles en el CSV descargado.
+            No se almacenan aquí por razones de seguridad.
+          </span>
+        </q-banner>
+      </q-card-section>
+
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          v-if="!resultDownloaded"
+          id="downloadResultBtn"
+          unelevated
+          color="positive"
+          icon="file_download"
+          label="Download CSV"
+          size="md"
+          @click="downloadResultCSV"
+        />
+        <q-btn
+          flat
+          :color="resultDownloaded ? 'positive' : 'grey'"
+          :icon="resultDownloaded ? 'check_circle' : 'close'"
+          :label="resultDownloaded ? 'Close' : 'Close without downloading'"
+          @click="closeResultDialog"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
 </template>

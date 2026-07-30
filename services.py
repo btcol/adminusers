@@ -232,16 +232,20 @@ async def process_delete_wallet_csv(
     success_count = 0
     error_count = 0
 
-    from .crud import delete_managed_wallet
+    from .crud import delete_managed_wallet, get_managed_wallet
 
     for row in rows:
         try:
+            # Verify it's a managed wallet (not an admin's personal wallet)
+            managed_record = await get_managed_wallet(admin_user_id, row.wallet_id)
+            if not managed_record:
+                raise ValueError(
+                    "Protección: Solo puedes borrar billeteras creadas y gestionadas por esta extensión."
+                )
+
             wallet = await get_wallet(row.wallet_id)
             if not wallet:
                 raise ValueError("Wallet no encontrada en el sistema core.")
-
-            if wallet.user == admin_user_id:
-                raise ValueError("Protección de admin: No puedes borrar las wallets de tu cuenta de administrador.")
 
             # Realizar sweeping de fondos si el balance es mayor a cero
             funds_swept = 0

@@ -17,6 +17,10 @@ window.PageAdminusers = {
       // ── Batch result returned from the API ──
       batchResult: null,
 
+      // ── Result modal state ──
+      resultDialogOpen: false,
+      resultDownloaded: false,
+
       // ── Error table columns ──
       errorColumns: [
         {name: 'wallet_name', label: 'Wallet Name', field: 'wallet_name', align: 'left'},
@@ -117,6 +121,8 @@ window.PageAdminusers = {
         }
 
         this.batchResult = await response.json()
+        this.resultDownloaded = false
+        this.resultDialogOpen = true
         await this.getManagedWallets()
 
         if (this.batchResult.success_count > 0) {
@@ -172,6 +178,16 @@ window.PageAdminusers = {
       link.download = 'wallets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.csv'
       link.click()
       URL.revokeObjectURL(url)
+
+      // Mark as downloaded — changes button state in the modal
+      this.resultDownloaded = true
+    },
+
+    closeResultDialog() {
+      this.resultDialogOpen = false
+      // Clear batchResult only after closing so data persists while modal is open
+      this.batchResult = null
+      this.resultDownloaded = false
     },
 
     downloadTemplate() {
