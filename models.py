@@ -63,6 +63,30 @@ class WalletBatchResult(BaseModel):
     rows: list[WalletBatchResultRow]
 
 
+class CsvDeleteInputRow(BaseModel):
+    """A single parsed row from the uploaded CSV for deletion."""
+
+    wallet_id: str
+
+
+class WalletDeleteBatchResultRow(BaseModel):
+    """Result for a single wallet from the batch delete operation."""
+
+    wallet_id: str
+    funds_swept: int = 0
+    status: str  # "success" | "error"
+    error: str | None = None
+
+
+class WalletDeleteBatchResult(BaseModel):
+    """Full result of a batch wallet delete operation."""
+
+    total: int
+    success_count: int
+    error_count: int
+    rows: list[WalletDeleteBatchResultRow]
+
+
 ############################ Settings #############################
 
 

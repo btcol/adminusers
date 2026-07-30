@@ -1,4 +1,4 @@
-# Description: API endpoints for the adminusers extension.
+# Description: API endpoints for the adminwallets extension.
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, UploadFile
@@ -18,6 +18,7 @@ from .models import (
     ManagedWallet,
     ManagedWalletFilters,
     WalletBatchResult,
+    WalletDeleteBatchResult,
 )
 from .services import (
     get_settings,
@@ -27,13 +28,13 @@ from .services import (
 
 managed_wallet_filters = parse_filters(ManagedWalletFilters)
 
-adminusers_api_router = APIRouter()
+adminwallets_api_router = APIRouter()
 
 
 ############################# Wallet Batch Upload #############################
 
 
-@adminusers_api_router.post(
+@adminwallets_api_router.post(
     "/api/v1/wallets/upload",
     name="Upload Wallet CSV",
     summary=(
@@ -74,7 +75,7 @@ async def api_upload_wallet_csv(
 ############################# Wallet List #############################
 
 
-@adminusers_api_router.get(
+@adminwallets_api_router.get(
     "/api/v1/wallets/paginated",
     name="Managed Wallet List",
     summary="Get paginated list of wallets created by this extension.",
@@ -92,7 +93,7 @@ async def api_get_managed_wallets(
     )
 
 
-@adminusers_api_router.get(
+@adminwallets_api_router.get(
     "/api/v1/wallets/{wallet_id}",
     name="Get Managed Wallet",
     summary="Get metadata for a single managed wallet (no keys returned).",
@@ -109,12 +110,12 @@ async def api_get_managed_wallet(
     return record
 
 
-@adminusers_api_router.delete(
+@adminwallets_api_router.delete(
     "/api/v1/wallets/{wallet_id}",
     name="Delete Managed Wallet Record",
     summary=(
-        "Remove the wallet record from the extension's registry. "
-        "Does NOT delete the actual wallet from the LNbits core."
+        "Remove the wallet record from the extension's registry and delete it from the LNbits core. "
+        "Sweeps funds to the admin wallet."
     ),
     response_description="Deletion status.",
     response_model=SimpleStatus,
@@ -127,14 +128,91 @@ async def api_delete_managed_wallet(
     if not record:
         raise HTTPException(HTTPStatus.NOT_FOUND, "Wallet record not found.")
 
+    from lnbits.core.crud.wallets import get_wallet, delete_wallet, get_wallets
+    from lnbits.core.services import create_invoice, pay_invoice, fee_reserve_total
+    wallet = await get_wallet(wallet_id)
+    if not wallet:
+         raise HTTPException(HTTPStatus.NOT_FOUND, "Core wallet not found.")
+
+    if wallet.user == account.id:
+         raise HTTPException(HTTPStatus.BAD_REQUEST, "Cannot delete your own admin account wallets.")
+
+    balance_msat = wallet.balance_msat
+    if balance_msat > 0:
+         fee_msat = fee_reserve_total(balance_msat, internal=True)
+         amount_to_send_msat = balance_msat - fee_msat
+         if amount_to_send_msat > 0:
+              amount_sat = amount_to_send_msat // 1000
+              if amount_sat > 0:
+                   admin_wallets = await get_wallets(account.id)
+                   if admin_wallets:
+                        admin_wallet_id = admin_wallets[0].id
+                        invoice = await create_invoice(
+                             wallet_id=admin_wallet_id,
+                             amount=amount_sat,
+                             memo=f"Sweep from deleted wallet {wallet_id}",
+                             internal=True,
+                        )
+                        await pay_invoice(
+                             wallet_id=wallet_id,
+                             payment_request=invoice.bolt11,
+                        )
+
     await delete_managed_wallet(account.id, wallet_id)
-    return SimpleStatus(success=True, message="Wallet record removed from registry.")
+    await delete_wallet(account.id, wallet_id)
+    return SimpleStatus(success=True, message="Wallet deleted from core and registry.")
+
+
+@adminwallets_api_router.post(
+    "/api/v1/wallets/delete-csv",
+    name="Delete Wallet CSV",
+    summary="Upload a CSV file with wallet IDs to delete them in bulk, sweeping funds to the admin.",
+    response_description="Batch deletion result with per-row status.",
+    response_model=WalletDeleteBatchResult,
+    status_code=HTTPStatus.OK,
+)
+async def api_delete_wallet_csv(
+    file: UploadFile,
+    account: User = Depends(check_admin),
+) -> WalletDeleteBatchResult:
+    if not file.filename or not file.filename.endswith(".csv"):
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            "Only .csv files are accepted.",
+        )
+
+    raw_bytes = await file.read()
+    try:
+        csv_content = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            HTTPStatus.BAD_REQUEST,
+            "File encoding not supported. Please upload a UTF-8 encoded CSV.",
+        )
+
+    from lnbits.core.crud.wallets import get_wallets
+    admin_wallets = await get_wallets(account.id)
+    if not admin_wallets:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, "Admin has no wallets to receive funds.")
+    admin_wallet_id = admin_wallets[0].id
+
+    from .services import process_delete_wallet_csv
+    try:
+        result = await process_delete_wallet_csv(
+            admin_user_id=account.id, 
+            admin_wallet_id=admin_wallet_id, 
+            csv_content=csv_content
+        )
+    except ValueError as exc:
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc))
+
+    return result
 
 
 ############################ Settings #############################
 
 
-@adminusers_api_router.get(
+@adminwallets_api_router.get(
     "/api/v1/settings",
     name="Get Settings",
     summary="Get the extension settings.",
@@ -147,7 +225,7 @@ async def api_get_settings(
     return await get_settings("admin")
 
 
-@adminusers_api_router.put(
+@adminwallets_api_router.put(
     "/api/v1/settings",
     name="Update Settings",
     summary="Update the extension settings.",

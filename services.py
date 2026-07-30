@@ -3,7 +3,8 @@ import io
 
 from loguru import logger
 
-from lnbits.core.crud.wallets import create_wallet
+from lnbits.core.crud.wallets import create_wallet, delete_wallet, get_wallet
+from lnbits.core.services import create_invoice, pay_invoice, fee_reserve_total
 
 from .crud import (
     create_extension_settings,
@@ -13,9 +14,12 @@ from .crud import (
 )
 from .models import (
     CsvInputRow,
+    CsvDeleteInputRow,
     ExtensionSettings,
     WalletBatchResult,
     WalletBatchResultRow,
+    WalletDeleteBatchResultRow,
+    WalletDeleteBatchResult,
 )
 
 
@@ -118,7 +122,7 @@ async def process_wallet_csv(
 
         except Exception as exc:
             logger.warning(
-                f"adminusers: failed to create wallet '{row.wallet_name}': {exc}"
+                f"adminwallets: failed to create wallet '{row.wallet_name}': {exc}"
             )
             results.append(
                 WalletBatchResultRow(
@@ -130,6 +134,111 @@ async def process_wallet_csv(
             error_count += 1
 
     return WalletBatchResult(
+        total=len(rows),
+        success_count=success_count,
+        error_count=error_count,
+        rows=results,
+    )
+
+
+def parse_delete_csv_input(csv_content: str) -> list[CsvDeleteInputRow]:
+    reader = csv.DictReader(io.StringIO(csv_content.strip()))
+
+    if reader.fieldnames is None:
+        raise ValueError("CSV file is empty or missing headers.")
+
+    normalized_fields = {f.strip().lower() for f in reader.fieldnames}
+    if "wallet_id" not in normalized_fields:
+        raise ValueError("CSV is missing required column: wallet_id")
+
+    rows = []
+    for line_num, row in enumerate(reader, start=2):
+        wallet_id = row.get("wallet_id", "").strip()
+        if not wallet_id:
+            raise ValueError(f"Row {line_num}: wallet_id cannot be empty.")
+        rows.append(CsvDeleteInputRow(wallet_id=wallet_id))
+
+    if not rows:
+        raise ValueError("CSV contains no data rows.")
+
+    return rows
+
+
+async def process_delete_wallet_csv(
+    admin_user_id: str,
+    admin_wallet_id: str,
+    csv_content: str,
+) -> WalletDeleteBatchResult:
+    rows = parse_delete_csv_input(csv_content)
+
+    results: list[WalletDeleteBatchResultRow] = []
+    success_count = 0
+    error_count = 0
+
+    from .crud import delete_managed_wallet
+
+    for row in rows:
+        try:
+            wallet = await get_wallet(row.wallet_id)
+            if not wallet:
+                raise ValueError("Wallet no encontrada en el sistema core.")
+
+            if wallet.user == admin_user_id:
+                raise ValueError("Protección de admin: No puedes borrar las wallets de tu cuenta de administrador.")
+
+            # Realizar sweeping de fondos si el balance es mayor a cero
+            funds_swept = 0
+            balance_msat = wallet.balance_msat
+            if balance_msat > 0:
+                fee_msat = fee_reserve_total(balance_msat, internal=True)
+                amount_to_send_msat = balance_msat - fee_msat
+                
+                if amount_to_send_msat > 0:
+                    amount_sat = amount_to_send_msat // 1000
+                    if amount_sat > 0:
+                        # Crear invoice en la wallet del administrador
+                        invoice = await create_invoice(
+                            wallet_id=admin_wallet_id,
+                            amount=amount_sat,
+                            memo=f"Sweep from deleted wallet {row.wallet_id}",
+                            internal=True,
+                        )
+                        # Pagar invoice desde la wallet que se va a borrar
+                        await pay_invoice(
+                            wallet_id=row.wallet_id,
+                            payment_request=invoice.bolt11,
+                        )
+                        funds_swept = amount_sat
+
+            # Borrar de la extensión
+            await delete_managed_wallet(admin_user_id, row.wallet_id)
+            
+            # Borrar del core
+            await delete_wallet(admin_user_id, row.wallet_id)
+
+            results.append(
+                WalletDeleteBatchResultRow(
+                    wallet_id=row.wallet_id,
+                    funds_swept=funds_swept,
+                    status="success",
+                )
+            )
+            success_count += 1
+
+        except Exception as exc:
+            logger.warning(
+                f"adminwallets: failed to delete wallet '{row.wallet_id}': {exc}"
+            )
+            results.append(
+                WalletDeleteBatchResultRow(
+                    wallet_id=row.wallet_id,
+                    status="error",
+                    error=str(exc),
+                )
+            )
+            error_count += 1
+
+    return WalletDeleteBatchResult(
         total=len(rows),
         success_count=success_count,
         error_count=error_count,
