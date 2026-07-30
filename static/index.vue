@@ -22,11 +22,11 @@
       <q-card id="uploadCard">
         <q-card-section>
           <div class="row items-center q-mb-md">
-            <q-icon name="upload_file" size="sm" class="q-mr-sm" />
-            <span class="text-h6">Upload CSV</span>
+            <q-icon name="upload_file" size="md" color="primary" />
+            <div style="font-size: 20px; font-weight: 500; margin-left: 12px; letter-spacing: normal;">Upload CSV File</div>
           </div>
 
-          <q-banner rounded class="q-mb-md border-primary" style="border: 1px solid var(--q-primary)">
+          <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-primary)">
             <template v-slot:avatar>
               <q-icon name="info" color="primary" />
             </template>
@@ -169,7 +169,7 @@
             />
           </div>
 
-          <q-banner rounded class="q-mt-md" style="border: 1px solid orange">
+          <q-banner rounded class="q-mt-md bg-transparent" style="border: 1px solid orange">
             <template v-slot:avatar>
               <q-icon name="lock" color="orange" />
             </template>
@@ -310,7 +310,7 @@
                     <li>Click <strong>Process CSV</strong> — wallets are created and funded instantly.</li>
                     <li>Download the result CSV with wallet credentials and funding status.</li>
                   </ol>
-                  <q-banner rounded dense class="q-mt-sm" style="border: 1px solid orange">
+                  <q-banner rounded dense class="q-mt-sm bg-transparent" style="border: 1px solid orange">
                     <template v-slot:avatar>
                       <q-icon name="lock" color="orange" size="xs" />
                     </template>
