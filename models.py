@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from lnbits.db import FilterModel
 from pydantic import BaseModel, Field
 
-
 ########################### Managed Wallets ############################
 
 

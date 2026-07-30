@@ -1,10 +1,9 @@
 import csv
 import io
 
-from loguru import logger
-
 from lnbits.core.crud.wallets import create_wallet, delete_wallet, get_wallet
-from lnbits.core.services import create_invoice, pay_invoice, fee_reserve_total
+from lnbits.core.services import create_invoice, fee_reserve_total, pay_invoice
+from loguru import logger
 
 from .crud import (
     create_extension_settings,
@@ -13,15 +12,14 @@ from .crud import (
     update_extension_settings,
 )
 from .models import (
-    CsvInputRow,
     CsvDeleteInputRow,
+    CsvInputRow,
     ExtensionSettings,
     WalletBatchResult,
     WalletBatchResultRow,
-    WalletDeleteBatchResultRow,
     WalletDeleteBatchResult,
+    WalletDeleteBatchResultRow,
 )
-
 
 ########################### CSV Parsing ############################
 
@@ -59,23 +57,19 @@ def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
 
         raw_flag = row.get("include_admin_key", "0").strip()
         if raw_flag not in ("0", "1"):
-            raise ValueError(
-                f"Row {line_num}: include_admin_key must be '0' or '1', got '{raw_flag}'."
-            )
+            raise ValueError(f"Row {line_num}: include_admin_key must be '0' or '1', got '{raw_flag}'.")
 
         raw_balance = (row.get("initial_balance") or "0").strip()
         if not raw_balance:  # empty cell → treat as 0
             raw_balance = "0"
         try:
             initial_balance = int(raw_balance)
-        except ValueError:
+        except ValueError as err:
             raise ValueError(
                 f"Row {line_num}: initial_balance must be an integer, got '{raw_balance}'."
-            )
+            ) from err
         if initial_balance < 0:
-            raise ValueError(
-                f"Row {line_num}: initial_balance cannot be negative."
-            )
+            raise ValueError(f"Row {line_num}: initial_balance cannot be negative.")
 
         rows.append(
             CsvInputRow(
@@ -161,8 +155,7 @@ async def process_wallet_csv(
                     funded_sats = row.initial_balance
                 except Exception as fund_exc:
                     logger.warning(
-                        f"adminwallets: wallet '{row.wallet_name}' created but "
-                        f"funding failed: {fund_exc}"
+                        f"adminwallets: wallet '{row.wallet_name}' created but " f"funding failed: {fund_exc}"
                     )
 
             results.append(
@@ -178,9 +171,7 @@ async def process_wallet_csv(
             success_count += 1
 
         except Exception as exc:
-            logger.warning(
-                f"adminwallets: failed to create wallet '{row.wallet_name}': {exc}"
-            )
+            logger.warning(f"adminwallets: failed to create wallet '{row.wallet_name}': {exc}")
             results.append(
                 WalletBatchResultRow(
                     wallet_name=row.wallet_name,
@@ -239,9 +230,7 @@ async def process_delete_wallet_csv(
             # Verify it's a managed wallet (not an admin's personal wallet)
             managed_record = await get_managed_wallet(admin_user_id, row.wallet_id)
             if not managed_record:
-                raise ValueError(
-                    "Protección: Solo puedes borrar billeteras creadas y gestionadas por esta extensión."
-                )
+                raise ValueError("Protección: Solo puedes borrar billeteras creadas y gestionadas por esta extensión.")
 
             wallet = await get_wallet(row.wallet_id)
             if not wallet:
@@ -253,7 +242,7 @@ async def process_delete_wallet_csv(
             if balance_msat > 0:
                 fee_msat = fee_reserve_total(balance_msat, internal=True)
                 amount_to_send_msat = balance_msat - fee_msat
-                
+
                 if amount_to_send_msat > 0:
                     amount_sat = amount_to_send_msat // 1000
                     if amount_sat > 0:
@@ -273,7 +262,7 @@ async def process_delete_wallet_csv(
 
             # Borrar de la extensión
             await delete_managed_wallet(admin_user_id, row.wallet_id)
-            
+
             # Borrar del core
             await delete_wallet(user_id=admin_user_id, wallet_id=row.wallet_id)
 
@@ -287,9 +276,7 @@ async def process_delete_wallet_csv(
             success_count += 1
 
         except Exception as exc:
-            logger.warning(
-                f"adminwallets: failed to delete wallet '{row.wallet_id}': {exc}"
-            )
+            logger.warning(f"adminwallets: failed to delete wallet '{row.wallet_id}': {exc}")
             results.append(
                 WalletDeleteBatchResultRow(
                     wallet_id=row.wallet_id,

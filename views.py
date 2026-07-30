@@ -18,6 +18,4 @@ def adminwallets_renderer():
 
 
 # Admin-only page — requires admin privileges
-adminwallets_generic_router.add_api_route(
-    "/", methods=["GET"], endpoint=index, dependencies=[Depends(check_admin)]
-)
+adminwallets_generic_router.add_api_route("/", methods=["GET"], endpoint=index, dependencies=[Depends(check_admin)])

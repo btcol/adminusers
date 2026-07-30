@@ -1,6 +1,5 @@
 # Description: API endpoints for the adminwallets extension.
 from http import HTTPStatus
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.exceptions import HTTPException
@@ -72,7 +71,7 @@ async def api_list_admin_wallets(
 )
 async def api_upload_wallet_csv(
     file: UploadFile,
-    source_wallet_id: Optional[str] = Form(default=None),
+    source_wallet_id: str | None = Form(default=None),
     account: User = Depends(check_admin),
 ) -> WalletBatchResult:
     if not file.filename or not file.filename.endswith(".csv"):
@@ -84,11 +83,11 @@ async def api_upload_wallet_csv(
     raw_bytes = await file.read()
     try:
         csv_content = raw_bytes.decode("utf-8")
-    except UnicodeDecodeError:
+    except UnicodeDecodeError as err:
         raise HTTPException(
             HTTPStatus.BAD_REQUEST,
             "File encoding not supported. Please upload a UTF-8 encoded CSV.",
-        )
+        ) from err
 
     # Validate source wallet belongs to this admin
     if source_wallet_id:
@@ -107,7 +106,7 @@ async def api_upload_wallet_csv(
             admin_wallet_id=source_wallet_id,
         )
     except ValueError as exc:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc))
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
 
     return result
 
@@ -168,33 +167,33 @@ async def api_delete_managed_wallet(
     if not record:
         raise HTTPException(HTTPStatus.NOT_FOUND, "Wallet record not found.")
 
-    from lnbits.core.crud.wallets import get_wallet, delete_wallet, get_wallets
-    from lnbits.core.services import create_invoice, pay_invoice, fee_reserve_total
+    from lnbits.core.crud.wallets import delete_wallet, get_wallet, get_wallets
+    from lnbits.core.services import create_invoice, fee_reserve_total, pay_invoice
+
     wallet = await get_wallet(wallet_id)
     if not wallet:
-         raise HTTPException(HTTPStatus.NOT_FOUND, "Core wallet not found.")
-
+        raise HTTPException(HTTPStatus.NOT_FOUND, "Core wallet not found.")
 
     balance_msat = wallet.balance_msat
     if balance_msat > 0:
-         fee_msat = fee_reserve_total(balance_msat, internal=True)
-         amount_to_send_msat = balance_msat - fee_msat
-         if amount_to_send_msat > 0:
-              amount_sat = amount_to_send_msat // 1000
-              if amount_sat > 0:
-                   admin_wallets = await get_wallets(account.id)
-                   if admin_wallets:
-                        admin_wallet_id = admin_wallets[0].id
-                        invoice = await create_invoice(
-                             wallet_id=admin_wallet_id,
-                             amount=amount_sat,
-                             memo=f"Sweep from deleted wallet {wallet_id}",
-                             internal=True,
-                        )
-                        await pay_invoice(
-                             wallet_id=wallet_id,
-                             payment_request=invoice.bolt11,
-                        )
+        fee_msat = fee_reserve_total(balance_msat, internal=True)
+        amount_to_send_msat = balance_msat - fee_msat
+        if amount_to_send_msat > 0:
+            amount_sat = amount_to_send_msat // 1000
+            if amount_sat > 0:
+                admin_wallets = await get_wallets(account.id)
+                if admin_wallets:
+                    admin_wallet_id = admin_wallets[0].id
+                    invoice = await create_invoice(
+                        wallet_id=admin_wallet_id,
+                        amount=amount_sat,
+                        memo=f"Sweep from deleted wallet {wallet_id}",
+                        internal=True,
+                    )
+                    await pay_invoice(
+                        wallet_id=wallet_id,
+                        payment_request=invoice.bolt11,
+                    )
 
     await delete_managed_wallet(account.id, wallet_id)
     await delete_wallet(user_id=account.id, wallet_id=wallet_id)
@@ -222,27 +221,27 @@ async def api_delete_wallet_csv(
     raw_bytes = await file.read()
     try:
         csv_content = raw_bytes.decode("utf-8")
-    except UnicodeDecodeError:
+    except UnicodeDecodeError as err:
         raise HTTPException(
             HTTPStatus.BAD_REQUEST,
             "File encoding not supported. Please upload a UTF-8 encoded CSV.",
-        )
+        ) from err
 
     from lnbits.core.crud.wallets import get_wallets
+
     admin_wallets = await get_wallets(account.id)
     if not admin_wallets:
         raise HTTPException(HTTPStatus.BAD_REQUEST, "Admin has no wallets to receive funds.")
     admin_wallet_id = admin_wallets[0].id
 
     from .services import process_delete_wallet_csv
+
     try:
         result = await process_delete_wallet_csv(
-            admin_user_id=account.id, 
-            admin_wallet_id=admin_wallet_id, 
-            csv_content=csv_content
+            admin_user_id=account.id, admin_wallet_id=admin_wallet_id, csv_content=csv_content
         )
     except ValueError as exc:
-        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc))
+        raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc)) from exc
 
     return result
 

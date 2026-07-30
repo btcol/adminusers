@@ -31,11 +31,21 @@ window.PageAdminusers = {
 
       // ── Error table columns ──
       errorColumns: [
-        {name: 'wallet_name', label: 'Wallet Name', field: 'wallet_name', align: 'left'},
+        {
+          name: 'wallet_name',
+          label: 'Wallet Name',
+          field: 'wallet_name',
+          align: 'left'
+        },
         {name: 'error', label: 'Error', field: 'error', align: 'left'}
       ],
       deleteErrorColumns: [
-        {name: 'wallet_id', label: 'Wallet ID', field: 'wallet_id', align: 'left'},
+        {
+          name: 'wallet_id',
+          label: 'Wallet ID',
+          field: 'wallet_id',
+          align: 'left'
+        },
         {name: 'error', label: 'Error', field: 'error', align: 'left'}
       ],
 
@@ -105,7 +115,6 @@ window.PageAdminusers = {
   },
 
   methods: {
-
     // ──────────────────────────────────────────────
     //  CSV Upload & Processing
     // ──────────────────────────────────────────────
@@ -153,11 +162,11 @@ window.PageAdminusers = {
             message: `${this.batchResult.error_count} wallet(s) failed. See the error table.`
           })
         }
-
       } catch (error) {
         this.$q.notify({
           type: 'negative',
-          message: error.message || 'An error occurred while processing the CSV.'
+          message:
+            error.message || 'An error occurred while processing the CSV.'
         })
       } finally {
         this.uploadState.loading = false
@@ -172,7 +181,15 @@ window.PageAdminusers = {
     downloadResultCSV() {
       if (!this.batchResult) return
 
-      const headers = ['wallet_name', 'wallet_id', 'admin_key', 'invoice_key', 'initial_balance', 'status', 'error']
+      const headers = [
+        'wallet_name',
+        'wallet_id',
+        'admin_key',
+        'invoice_key',
+        'initial_balance',
+        'status',
+        'error'
+      ]
       const rows = this.batchResult.rows.map(r => [
         r.wallet_name || '',
         r.wallet_id || '',
@@ -184,14 +201,19 @@ window.PageAdminusers = {
       ])
 
       const csvContent = [headers, ...rows]
-        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .map(row =>
+          row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        )
         .join('\n')
 
       const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'})
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'wallets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.csv'
+      link.download =
+        'wallets_' +
+        new Date().toISOString().slice(0, 19).replace(/:/g, '-') +
+        '.csv'
       link.click()
       URL.revokeObjectURL(url)
 
@@ -207,7 +229,8 @@ window.PageAdminusers = {
     },
 
     downloadTemplate() {
-      const content = 'wallet_name,include_admin_key,initial_balance\nAlice,1,100\nBob,0,50\nCharlie,1,0\n'
+      const content =
+        'wallet_name,include_admin_key,initial_balance\nAlice,1,100\nBob,0,50\nCharlie,1,0\n'
       const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'})
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -227,13 +250,16 @@ window.PageAdminusers = {
         const formData = new FormData()
         formData.append('file', this.deleteUploadState.file)
 
-        const response = await fetch('/adminwallets/api/v1/wallets/delete-csv', {
-          method: 'POST',
-          headers: {
-            'X-API-KEY': this.g.user.wallets[0].adminkey
-          },
-          body: formData
-        })
+        const response = await fetch(
+          '/adminwallets/api/v1/wallets/delete-csv',
+          {
+            method: 'POST',
+            headers: {
+              'X-API-KEY': this.g.user.wallets[0].adminkey
+            },
+            body: formData
+          }
+        )
 
         if (!response.ok) {
           const err = await response.json()
@@ -257,11 +283,11 @@ window.PageAdminusers = {
             message: `${this.deleteBatchResult.error_count} wallet(s) failed. See the error table.`
           })
         }
-
       } catch (error) {
         this.$q.notify({
           type: 'negative',
-          message: error.message || 'An error occurred while processing the CSV.'
+          message:
+            error.message || 'An error occurred while processing the CSV.'
         })
       } finally {
         this.deleteUploadState.loading = false
@@ -281,14 +307,19 @@ window.PageAdminusers = {
       ])
 
       const csvContent = [headers, ...rows]
-        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .map(row =>
+          row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+        )
         .join('\n')
 
       const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'})
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = 'deleted_wallets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.csv'
+      link.download =
+        'deleted_wallets_' +
+        new Date().toISOString().slice(0, 19).replace(/:/g, '-') +
+        '.csv'
       link.click()
       URL.revokeObjectURL(url)
 
@@ -338,7 +369,7 @@ window.PageAdminusers = {
       await LNbits.utils
         .confirmDialog(
           'Remove this wallet from the registry?\n\n' +
-          'Note: this does NOT delete the actual wallet from LNbits.'
+            'Note: this does NOT delete the actual wallet from LNbits.'
         )
         .onOk(async () => {
           try {
@@ -348,7 +379,10 @@ window.PageAdminusers = {
               null
             )
             await this.getManagedWallets()
-            this.$q.notify({type: 'positive', message: 'Wallet removed from registry.'})
+            this.$q.notify({
+              type: 'positive',
+              message: 'Wallet removed from registry.'
+            })
           } catch (error) {
             LNbits.utils.notifyApiError(error)
           }

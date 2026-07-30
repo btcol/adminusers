@@ -1,7 +1,6 @@
 # Description: CRUD operations for the adminwallets extension database.
 
 from lnbits.db import Database, Filters, Page
-from lnbits.helpers import urlsafe_short_hash
 
 from .models import (
     ExtensionSettings,
@@ -72,9 +71,7 @@ async def delete_managed_wallet(user_id: str, wallet_id: str) -> None:
 ############################ Settings #############################
 
 
-async def create_extension_settings(
-    user_id: str, data: ExtensionSettings
-) -> ExtensionSettings:
+async def create_extension_settings(user_id: str, data: ExtensionSettings) -> ExtensionSettings:
     settings = UserExtensionSettings(**data.dict(), id=user_id)
     await db.insert("adminwallets.extension_settings", settings)
     return settings
@@ -93,9 +90,7 @@ async def get_extension_settings(
     )
 
 
-async def update_extension_settings(
-    user_id: str, data: ExtensionSettings
-) -> ExtensionSettings:
+async def update_extension_settings(user_id: str, data: ExtensionSettings) -> ExtensionSettings:
     settings = UserExtensionSettings(**data.dict(), id=user_id)
     await db.update("adminwallets.extension_settings", settings)
     return settings

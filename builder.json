@@ -1,141 +1,141 @@
 {
-    "id": "adminwallets",
-    "name": "adminwallets",
-    "stub_version": "v0.3.0",
-    "short_description": "Creation and management of wallets",
-    "description": "It allows the automatic and bulk creation of wallets. For example, if a node administrator needs to create multiple wallets from a list of users, the application creates the wallets and collects the APIs and wallet IDs automatically, avoiding the need to perform this operation manually.",
-    "owner_data": {
-        "name": "OwnerData",
+  "id": "adminwallets",
+  "name": "adminwallets",
+  "stub_version": "v0.3.0",
+  "short_description": "Creation and management of wallets",
+  "description": "It allows the automatic and bulk creation of wallets. For example, if a node administrator needs to create multiple wallets from a list of users, the application creates the wallets and collects the APIs and wallet IDs automatically, avoiding the need to perform this operation manually.",
+  "owner_data": {
+    "name": "OwnerData",
+    "editable": true,
+    "fields": [
+      {
+        "name": "name",
+        "type": "str",
+        "label": "Name",
+        "hint": "",
+        "optional": true,
         "editable": true,
-        "fields": [
-            {
-                "name": "name",
-                "type": "str",
-                "label": "Name",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            },
-            {
-                "name": "wallet",
-                "type": "wallet",
-                "label": "Wallet",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            },
-            {
-                "name": "currency",
-                "type": "currency",
-                "label": "Currency",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            },
-            {
-                "name": "amount",
-                "type": "int",
-                "label": "Amount",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            },
-            {
-                "name": "paid_down",
-                "type": "bool",
-                "label": "Paid_Down",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            },
-            {
-                "name": "date",
-                "type": "datetime",
-                "label": "Date",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            }
-        ]
-    },
-    "client_data": {
-        "name": "ClientData",
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      },
+      {
+        "name": "wallet",
+        "type": "wallet",
+        "label": "Wallet",
+        "hint": "",
+        "optional": true,
         "editable": true,
-        "fields": [
-            {
-                "name": "name",
-                "type": "str",
-                "label": "Name",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            }
-        ]
-    },
-    "settings_data": {
-        "name": "Settings",
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      },
+      {
+        "name": "currency",
+        "type": "currency",
+        "label": "Currency",
+        "hint": "",
+        "optional": true,
         "editable": true,
-        "fields": [
-            {
-                "name": "name",
-                "type": "str",
-                "label": "Name",
-                "hint": "",
-                "optional": true,
-                "editable": true,
-                "searchable": true,
-                "sortable": true,
-                "fields": []
-            }
-        ],
-        "enabled": true,
-        "type": "admin"
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      },
+      {
+        "name": "amount",
+        "type": "int",
+        "label": "Amount",
+        "hint": "",
+        "optional": true,
+        "editable": true,
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      },
+      {
+        "name": "paid_down",
+        "type": "bool",
+        "label": "Paid_Down",
+        "hint": "",
+        "optional": true,
+        "editable": true,
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      },
+      {
+        "name": "date",
+        "type": "datetime",
+        "label": "Date",
+        "hint": "",
+        "optional": true,
+        "editable": true,
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      }
+    ]
+  },
+  "client_data": {
+    "name": "ClientData",
+    "editable": true,
+    "fields": [
+      {
+        "name": "name",
+        "type": "str",
+        "label": "Name",
+        "hint": "",
+        "optional": true,
+        "editable": true,
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      }
+    ]
+  },
+  "settings_data": {
+    "name": "Settings",
+    "editable": true,
+    "fields": [
+      {
+        "name": "name",
+        "type": "str",
+        "label": "Name",
+        "hint": "",
+        "optional": true,
+        "editable": true,
+        "searchable": true,
+        "sortable": true,
+        "fields": []
+      }
+    ],
+    "enabled": true,
+    "type": "admin"
+  },
+  "public_page": {
+    "has_public_page": false,
+    "owner_data_fields": {
+      "name": "",
+      "description": ""
     },
-    "public_page": {
-        "has_public_page": false,
-        "owner_data_fields": {
-            "name": "",
-            "description": ""
-        },
-        "client_data_fields": {
-            "public_inputs": []
-        },
-        "action_fields": {
-            "generate_action": false,
-            "generate_payment_logic": false,
-            "wallet_id": "",
-            "currency": "",
-            "amount": "",
-            "amount_source": null,
-            "paid_flag": ""
-        }
+    "client_data_fields": {
+      "public_inputs": []
     },
-    "preview_action": {
-        "is_preview_mode": false,
-        "is_settings_preview": false,
-        "is_owner_data_preview": false,
-        "is_client_data_preview": false,
-        "is_public_page_preview": false
+    "action_fields": {
+      "generate_action": false,
+      "generate_payment_logic": false,
+      "wallet_id": "",
+      "currency": "",
+      "amount": "",
+      "amount_source": null,
+      "paid_flag": ""
     }
+  },
+  "preview_action": {
+    "is_preview_mode": false,
+    "is_settings_preview": false,
+    "is_owner_data_preview": false,
+    "is_client_data_preview": false,
+    "is_public_page_preview": false
+  }
 }
