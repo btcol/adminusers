@@ -5,7 +5,12 @@ window.PageAdminusers = {
   data: function () {
     return {
       // ── Upload state ──
+      csvTab: 'create',
       uploadState: {
+        file: null,
+        loading: false
+      },
+      deleteUploadState: {
         file: null,
         loading: false
       },
@@ -16,14 +21,21 @@ window.PageAdminusers = {
 
       // ── Batch result returned from the API ──
       batchResult: null,
+      deleteBatchResult: null,
 
       // ── Result modal state ──
       resultDialogOpen: false,
       resultDownloaded: false,
+      deleteResultDialogOpen: false,
+      deleteResultDownloaded: false,
 
       // ── Error table columns ──
       errorColumns: [
         {name: 'wallet_name', label: 'Wallet Name', field: 'wallet_name', align: 'left'},
+        {name: 'error', label: 'Error', field: 'error', align: 'left'}
+      ],
+      deleteErrorColumns: [
+        {name: 'wallet_id', label: 'Wallet ID', field: 'wallet_id', align: 'left'},
         {name: 'error', label: 'Error', field: 'error', align: 'left'}
       ],
 
@@ -77,6 +89,10 @@ window.PageAdminusers = {
     errorRows() {
       if (!this.batchResult) return []
       return this.batchResult.rows.filter(r => r.status === 'error')
+    },
+    deleteErrorRows() {
+      if (!this.deleteBatchResult) return []
+      return this.deleteBatchResult.rows.filter(r => r.status === 'error')
     }
   },
 
@@ -197,6 +213,101 @@ window.PageAdminusers = {
       const link = document.createElement('a')
       link.href = url
       link.download = 'wallets_template.csv'
+      link.click()
+      URL.revokeObjectURL(url)
+    },
+
+    async uploadDeleteCSV() {
+      if (!this.deleteUploadState.file) return
+
+      this.deleteUploadState.loading = true
+      this.deleteBatchResult = null
+
+      try {
+        const formData = new FormData()
+        formData.append('file', this.deleteUploadState.file)
+
+        const response = await fetch('/adminwallets/api/v1/wallets/delete-csv', {
+          method: 'POST',
+          headers: {
+            'X-API-KEY': this.g.user.wallets[0].adminkey
+          },
+          body: formData
+        })
+
+        if (!response.ok) {
+          const err = await response.json()
+          throw new Error(err.detail || 'Upload failed.')
+        }
+
+        this.deleteBatchResult = await response.json()
+        this.deleteResultDownloaded = false
+        this.deleteResultDialogOpen = true
+        await this.getManagedWallets()
+
+        if (this.deleteBatchResult.success_count > 0) {
+          this.$q.notify({
+            type: 'positive',
+            message: `${this.deleteBatchResult.success_count} wallet(s) deleted successfully.`
+          })
+        }
+        if (this.deleteBatchResult.error_count > 0) {
+          this.$q.notify({
+            type: 'warning',
+            message: `${this.deleteBatchResult.error_count} wallet(s) failed. See the error table.`
+          })
+        }
+
+      } catch (error) {
+        this.$q.notify({
+          type: 'negative',
+          message: error.message || 'An error occurred while processing the CSV.'
+        })
+      } finally {
+        this.deleteUploadState.loading = false
+        this.deleteUploadState.file = null
+      }
+    },
+
+    downloadDeleteResultCSV() {
+      if (!this.deleteBatchResult) return
+
+      const headers = ['wallet_id', 'funds_swept', 'status', 'error']
+      const rows = this.deleteBatchResult.rows.map(r => [
+        r.wallet_id || '',
+        r.funds_swept != null ? r.funds_swept : '',
+        r.status || '',
+        r.error || ''
+      ])
+
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+
+      const blob = new Blob([csvContent], {type: 'text/csv;charset=utf-8;'})
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'deleted_wallets_' + new Date().toISOString().slice(0, 19).replace(/:/g, '-') + '.csv'
+      link.click()
+      URL.revokeObjectURL(url)
+
+      this.deleteResultDownloaded = true
+    },
+
+    closeDeleteResultDialog() {
+      this.deleteResultDialogOpen = false
+      this.deleteBatchResult = null
+      this.deleteResultDownloaded = false
+    },
+
+    downloadDeleteTemplate() {
+      const content = 'wallet_id\n<wallet_id_1>\n<wallet_id_2>\n'
+      const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'})
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'delete_wallets_template.csv'
       link.click()
       URL.revokeObjectURL(url)
     },

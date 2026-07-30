@@ -20,89 +20,161 @@
 
       <!-- ── CSV Upload card ── -->
       <q-card id="uploadCard">
-        <q-card-section>
+        <q-tabs
+          v-model="csvTab"
+          dense
+          class="text-grey"
+          active-color="primary"
+          indicator-color="primary"
+          align="justify"
+          narrow-indicator
+        >
+          <q-tab name="create" label="Create Wallets"></q-tab>
+          <q-tab name="delete" label="Delete Wallets"></q-tab>
+        </q-tabs>
 
+        <q-separator></q-separator>
 
-          <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-primary)">
-            <template v-slot:avatar>
-              <q-icon name="info" color="primary" />
-            </template>
-            <div class="text-body2">
-              <strong>CSV format required:</strong> columns —
-              <code>wallet_name</code>, <code>include_admin_key</code>,
-              and optionally <code>initial_balance</code>
-              (sats to fund the wallet on creation, defaults to 0).
-            </div>
-            <div class="q-mt-xs">
-              <q-btn
-                flat
-                dense
-                size="sm"
-                color="primary"
-                label="Download template"
-                icon="file_download"
-                @click="downloadTemplate"
-              />
-            </div>
-          </q-banner>
-
-          <!-- Source wallet selector -->
-          <div class="q-mb-md">
-            <q-select
-              v-model="selectedSourceWallet"
-              :options="adminWallets"
-              option-value="id"
-              option-label="name"
-              label="Funding source wallet (required if using initial_balance)"
-              filled
-              dense
-              clearable
-              hint="Funds will be deducted from this wallet when creating wallets with initial balance."
-            >
-              <template v-slot:option="scope">
-                <q-item v-bind="scope.itemProps">
-                  <q-item-section>
-                    <q-item-label>${ scope.opt.name }</q-item-label>
-                    <q-item-label caption>${ scope.opt.balance_sat } sats</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </template>
-              <template v-slot:selected-item="scope" v-if="selectedSourceWallet">
-                <span>${ scope.opt.name } — <strong>${ scope.opt.balance_sat } sats</strong></span>
-              </template>
-            </q-select>
-          </div>
-
-          <div class="row q-col-gutter-md items-end">
-            <div class="col">
-              <q-file
-                v-model="uploadState.file"
-                label="Select CSV file"
-                accept=".csv"
-                filled
-                dense
-                clearable
-                :disable="uploadState.loading"
-              >
-                <template v-slot:prepend>
-                  <q-icon name="attach_file" />
+        <q-tab-panels v-model="csvTab" animated>
+          <q-tab-panel name="create" class="q-pa-none">
+            <q-card-section>
+              <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-primary)">
+                <template v-slot:avatar>
+                  <q-icon name="info" color="primary" />
                 </template>
-              </q-file>
-            </div>
-            <div class="col-auto">
-              <q-btn
-                id="processBtn"
-                unelevated
-                color="primary"
-                icon="play_arrow"
-                label="Process CSV"
-                :disable="!uploadState.file || uploadState.loading"
-                :loading="uploadState.loading"
-                @click="uploadCSV"
-              />
-            </div>
-          </div>
-        </q-card-section>
+                <div class="text-body2">
+                  <strong>CSV format required:</strong> columns —
+                  <code>wallet_name</code>, <code>include_admin_key</code>,
+                  and optionally <code>initial_balance</code>
+                  (sats to fund the wallet on creation, defaults to 0).
+                </div>
+                <div class="q-mt-xs">
+                  <q-btn
+                    flat
+                    dense
+                    size="sm"
+                    color="primary"
+                    label="Download template"
+                    icon="file_download"
+                    @click="downloadTemplate"
+                  />
+                </div>
+              </q-banner>
+
+              <!-- Source wallet selector -->
+              <div class="q-mb-md">
+                <q-select
+                  v-model="selectedSourceWallet"
+                  :options="adminWallets"
+                  option-value="id"
+                  option-label="name"
+                  label="Funding source wallet (required if using initial_balance)"
+                  filled
+                  dense
+                  clearable
+                  hint="Funds will be deducted from this wallet when creating wallets with initial balance."
+                >
+                  <template v-slot:option="scope">
+                    <q-item v-bind="scope.itemProps">
+                      <q-item-section>
+                        <q-item-label>${ scope.opt.name }</q-item-label>
+                        <q-item-label caption>${ scope.opt.balance_sat } sats</q-item-label>
+                      </q-item-section>
+                    </q-item>
+                  </template>
+                  <template v-slot:selected-item="scope" v-if="selectedSourceWallet">
+                    <span>${ scope.opt.name } — <strong>${ scope.opt.balance_sat } sats</strong></span>
+                  </template>
+                </q-select>
+              </div>
+
+              <div class="row q-col-gutter-md items-end">
+                <div class="col">
+                  <q-file
+                    v-model="uploadState.file"
+                    label="Select CSV file"
+                    accept=".csv"
+                    filled
+                    dense
+                    clearable
+                    :disable="uploadState.loading"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="attach_file" />
+                    </template>
+                  </q-file>
+                </div>
+                <div class="col-auto">
+                  <q-btn
+                    id="processBtn"
+                    unelevated
+                    color="primary"
+                    icon="play_arrow"
+                    label="Process CSV"
+                    :disable="!uploadState.file || uploadState.loading"
+                    :loading="uploadState.loading"
+                    @click="uploadCSV"
+                  />
+                </div>
+              </div>
+            </q-card-section>
+          </q-tab-panel>
+
+          <q-tab-panel name="delete" class="q-pa-none">
+            <q-card-section>
+              <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-negative)">
+                <template v-slot:avatar>
+                  <q-icon name="warning" color="negative" />
+                </template>
+                <div class="text-body2">
+                  <strong>CSV format required:</strong> column — <code>wallet_id</code>.
+                  This will delete the wallets and sweep remaining funds to the admin wallet.
+                </div>
+                <div class="q-mt-xs">
+                  <q-btn
+                    flat
+                    dense
+                    size="sm"
+                    color="negative"
+                    label="Download template"
+                    icon="file_download"
+                    @click="downloadDeleteTemplate"
+                  />
+                </div>
+              </q-banner>
+
+              <div class="row q-col-gutter-md items-end">
+                <div class="col">
+                  <q-file
+                    v-model="deleteUploadState.file"
+                    label="Select CSV file"
+                    accept=".csv"
+                    filled
+                    dense
+                    clearable
+                    :disable="deleteUploadState.loading"
+                  >
+                    <template v-slot:prepend>
+                      <q-icon name="attach_file" />
+                    </template>
+                  </q-file>
+                </div>
+                <div class="col-auto">
+                  <q-btn
+                    id="processDeleteBtn"
+                    unelevated
+                    color="negative"
+                    icon="delete_sweep"
+                    label="Delete via CSV"
+                    :disable="!deleteUploadState.file || deleteUploadState.loading"
+                    :loading="deleteUploadState.loading"
+                    @click="uploadDeleteCSV"
+                  />
+                </div>
+              </div>
+            </q-card-section>
+          </q-tab-panel>
+        </q-tab-panels>
       </q-card>
 
 
@@ -383,6 +455,102 @@ Charlie,1,0</pre>
           :icon="resultDownloaded ? 'check_circle' : 'close'"
           :label="resultDownloaded ? 'Close' : 'Close without downloading'"
           @click="closeResultDialog"
+        />
+      </q-card-actions>
+    </q-card>
+  </q-dialog>
+</template>
+
+<!-- ── Delete Result Modal ── -->
+<template v-if="deleteResultDialogOpen">
+  <q-dialog
+    v-model="deleteResultDialogOpen"
+    persistent
+    transition-show="scale"
+    transition-hide="scale"
+  >
+    <q-card style="min-width: 480px; max-width: 95vw">
+      <q-card-section class="row items-center q-pb-none">
+        <div class="text-h6">
+          <q-icon name="delete_sweep" class="q-mr-sm" color="negative" />
+          Deletion Result
+        </div>
+        <q-space />
+        <q-chip
+          v-if="!deleteResultDownloaded"
+          dense
+          color="orange"
+          text-color="white"
+          icon="warning"
+          label="Download before closing"
+        />
+        <q-chip
+          v-else
+          dense
+          color="positive"
+          text-color="white"
+          icon="check"
+          label="Downloaded"
+        />
+      </q-card-section>
+
+      <q-card-section>
+        <div class="row q-gutter-sm q-mb-md">
+          <q-chip icon="check_circle" color="positive" text-color="white">
+            ${ deleteBatchResult && deleteBatchResult.success_count } deleted
+          </q-chip>
+          <q-chip
+            v-if="deleteBatchResult && deleteBatchResult.error_count > 0"
+            icon="error"
+            color="negative"
+            text-color="white"
+          >
+            ${ deleteBatchResult.error_count } failed
+          </q-chip>
+          <q-chip icon="list" color="grey-7" text-color="white">
+            ${ deleteBatchResult && deleteBatchResult.total } total
+          </q-chip>
+          <q-chip
+            v-if="deleteBatchResult && deleteBatchResult.rows.some(r => (r.funds_swept || 0) > 0)"
+            icon="bolt"
+            color="deep-orange"
+            text-color="white"
+          >
+            ${ deleteBatchResult && deleteBatchResult.rows.reduce((s, r) => s + (r.funds_swept || 0), 0) } sats swept
+          </q-chip>
+        </div>
+
+        <div v-if="deleteBatchResult && deleteBatchResult.error_count > 0" class="q-mb-md">
+          <div class="text-subtitle2 q-mb-sm text-negative">
+            <q-icon name="warning" class="q-mr-xs" />Failed rows
+          </div>
+          <q-table
+            dense
+            flat
+            :rows="deleteErrorRows"
+            :columns="deleteErrorColumns"
+            row-key="wallet_id"
+            hide-bottom
+          />
+        </div>
+      </q-card-section>
+
+      <q-card-actions align="right" class="q-pa-md">
+        <q-btn
+          v-if="!deleteResultDownloaded"
+          unelevated
+          color="positive"
+          icon="file_download"
+          label="Download CSV"
+          size="md"
+          @click="downloadDeleteResultCSV"
+        />
+        <q-btn
+          flat
+          :color="deleteResultDownloaded ? 'positive' : 'grey'"
+          :icon="deleteResultDownloaded ? 'check_circle' : 'close'"
+          :label="deleteResultDownloaded ? 'Close' : 'Close without downloading'"
+          @click="closeDeleteResultDialog"
         />
       </q-card-actions>
     </q-card>
