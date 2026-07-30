@@ -197,7 +197,7 @@ async def api_delete_managed_wallet(
                         )
 
     await delete_managed_wallet(account.id, wallet_id)
-    await delete_wallet(account.id, wallet_id)
+    await delete_wallet(user_id=account.id, wallet_id=wallet_id)
     return SimpleStatus(success=True, message="Wallet deleted from core and registry.")
 
 

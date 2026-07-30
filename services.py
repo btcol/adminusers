@@ -275,7 +275,7 @@ async def process_delete_wallet_csv(
             await delete_managed_wallet(admin_user_id, row.wallet_id)
             
             # Borrar del core
-            await delete_wallet(admin_user_id, row.wallet_id)
+            await delete_wallet(user_id=admin_user_id, wallet_id=row.wallet_id)
 
             results.append(
                 WalletDeleteBatchResultRow(
