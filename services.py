@@ -63,7 +63,9 @@ def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
                 f"Row {line_num}: include_admin_key must be '0' or '1', got '{raw_flag}'."
             )
 
-        raw_balance = row.get("initial_balance", "0").strip() if row.get("initial_balance") is not None else "0"
+        raw_balance = (row.get("initial_balance") or "0").strip()
+        if not raw_balance:  # empty cell → treat as 0
+            raw_balance = "0"
         try:
             initial_balance = int(raw_balance)
         except ValueError:
