@@ -1,0 +1,14 @@
+[
+  {
+    "path": "/adminusers/",
+    "name": "PageAdminusers",
+    "template": "/adminusers/static/index.vue",
+    "component": "/adminusers/static/index.js"
+  },
+  {
+    "path": "/adminusers/:id",
+    "name": "PageAdminusersPublic",
+    "template": "/adminusers/static/public_page.vue",
+    "component": "/adminusers/static/public_page.js"
+  }
+]
