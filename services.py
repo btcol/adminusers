@@ -63,10 +63,23 @@ def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
                 f"Row {line_num}: include_admin_key must be '0' or '1', got '{raw_flag}'."
             )
 
+        raw_balance = row.get("initial_balance", "0").strip() if row.get("initial_balance") is not None else "0"
+        try:
+            initial_balance = int(raw_balance)
+        except ValueError:
+            raise ValueError(
+                f"Row {line_num}: initial_balance must be an integer, got '{raw_balance}'."
+            )
+        if initial_balance < 0:
+            raise ValueError(
+                f"Row {line_num}: initial_balance cannot be negative."
+            )
+
         rows.append(
             CsvInputRow(
                 wallet_name=wallet_name,
                 include_admin_key=(raw_flag == "1"),
+                initial_balance=initial_balance,
             )
         )
 
@@ -82,14 +95,34 @@ def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
 async def process_wallet_csv(
     user_id: str,
     csv_content: str,
+    admin_wallet_id: str | None = None,
 ) -> WalletBatchResult:
     """
-    Parse the CSV, create each wallet under the admin's account,
+    Parse the CSV, optionally pre-validate the admin's balance for initial funding,
+    create each wallet under the admin's account, fund it if requested,
     and return a structured result for CSV download.
 
     Errors on individual rows do not abort the entire batch.
     """
     rows = parse_csv_input(csv_content)
+
+    # ── Pre-validate total sats required before creating any wallet ──
+    total_sats_required = sum(r.initial_balance for r in rows)
+    if total_sats_required > 0:
+        if not admin_wallet_id:
+            raise ValueError("A source wallet must be selected to fund wallets.")
+        source_wallet = await get_wallet(admin_wallet_id)
+        if not source_wallet:
+            raise ValueError("Source wallet not found.")
+        fee_msat = fee_reserve_total(total_sats_required * 1000, internal=True)
+        total_needed_msat = total_sats_required * 1000 + fee_msat
+        if source_wallet.balance_msat < total_needed_msat:
+            available_sats = source_wallet.balance_msat // 1000
+            raise ValueError(
+                f"Insufficient balance in source wallet. "
+                f"Need {total_sats_required} sats (+ fees), "
+                f"but only have {available_sats} sats available."
+            )
 
     results: list[WalletBatchResultRow] = []
     success_count = 0
@@ -109,12 +142,34 @@ async def process_wallet_csv(
                 include_admin_key=row.include_admin_key,
             )
 
+            # ── Fund the new wallet if requested ──
+            funded_sats = 0
+            if row.initial_balance > 0 and admin_wallet_id:
+                try:
+                    invoice = await create_invoice(
+                        wallet_id=wallet.id,
+                        amount=row.initial_balance,
+                        memo=f"Initial funding for wallet '{row.wallet_name}'",
+                        internal=True,
+                    )
+                    await pay_invoice(
+                        wallet_id=admin_wallet_id,
+                        payment_request=invoice.bolt11,
+                    )
+                    funded_sats = row.initial_balance
+                except Exception as fund_exc:
+                    logger.warning(
+                        f"adminwallets: wallet '{row.wallet_name}' created but "
+                        f"funding failed: {fund_exc}"
+                    )
+
             results.append(
                 WalletBatchResultRow(
                     wallet_name=row.wallet_name,
                     wallet_id=wallet.id,
                     admin_key=wallet.adminkey if row.include_admin_key else None,
                     invoice_key=wallet.inkey,
+                    initial_balance=funded_sats,
                     status="success",
                 )
             )

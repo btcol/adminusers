@@ -31,9 +31,10 @@
               <q-icon name="info" color="primary" />
             </template>
             <div class="text-body2">
-              <strong>CSV format required:</strong> two columns —
-              <code>wallet_name</code> and <code>include_admin_key</code>
-              (1 = return admin + invoice key, 0 = return only invoice key).
+              <strong>CSV format required:</strong> columns —
+              <code>wallet_name</code>, <code>include_admin_key</code>,
+              and optionally <code>initial_balance</code>
+              (sats to fund the wallet on creation, defaults to 0).
             </div>
             <div class="q-mt-xs">
               <q-btn
@@ -47,6 +48,33 @@
               />
             </div>
           </q-banner>
+
+          <!-- Source wallet selector -->
+          <div class="q-mb-md">
+            <q-select
+              v-model="selectedSourceWallet"
+              :options="adminWallets"
+              option-value="id"
+              option-label="name"
+              label="Funding source wallet (required if using initial_balance)"
+              filled
+              dense
+              clearable
+              hint="Funds will be deducted from this wallet when creating wallets with initial balance."
+            >
+              <template v-slot:option="scope">
+                <q-item v-bind="scope.itemProps">
+                  <q-item-section>
+                    <q-item-label>${ scope.opt.name }</q-item-label>
+                    <q-item-label caption>${ scope.opt.balance_sat } sats</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </template>
+              <template v-slot:selected-item="scope" v-if="selectedSourceWallet">
+                <span>${ scope.opt.name } — <strong>${ scope.opt.balance_sat } sats</strong></span>
+              </template>
+            </q-select>
+          </div>
 
           <div class="row q-col-gutter-md items-end">
             <div class="col">
@@ -115,6 +143,14 @@
             </q-chip>
             <q-chip icon="list" color="grey-7" text-color="white">
               ${ batchResult.total } total
+            </q-chip>
+            <q-chip
+              v-if="batchResult.rows.some(r => r.initial_balance > 0)"
+              icon="bolt"
+              color="deep-orange"
+              text-color="white"
+            >
+              ${ batchResult.rows.reduce((s, r) => s + (r.initial_balance || 0), 0) } sats funded
             </q-chip>
           </div>
 
@@ -269,10 +305,11 @@
               <q-card>
                 <q-card-section>
                   <ol class="text-body2 q-pl-md">
-                    <li>Prepare a CSV with columns <code>wallet_name</code> and <code>include_admin_key</code>.</li>
+                    <li>Prepare a CSV with columns <code>wallet_name</code>, <code>include_admin_key</code> and optionally <code>initial_balance</code> (sats).</li>
+                    <li>Select a source wallet if you want to fund the new wallets.</li>
                     <li>Upload the CSV using the form on the left.</li>
-                    <li>Click <strong>Process CSV</strong> — wallets are created instantly.</li>
-                    <li>Download the result CSV with wallet credentials.</li>
+                    <li>Click <strong>Process CSV</strong> — wallets are created and funded instantly.</li>
+                    <li>Download the result CSV with wallet credentials and funding status.</li>
                   </ol>
                   <q-banner class="bg-orange-1 q-mt-sm" rounded dense>
                     <template v-slot:avatar>
@@ -293,16 +330,17 @@
               <q-card>
                 <q-card-section>
                   <div class="text-caption q-mb-sm">Input CSV example:</div>
-                  <pre class="bg-grey-2 q-pa-sm rounded-borders text-caption">wallet_name,include_admin_key
-Alice,1
-Bob,0
-Charlie,1</pre>
+                  <pre class="bg-grey-2 q-pa-sm rounded-borders text-caption">wallet_name,include_admin_key,initial_balance
+Alice,1,100
+Bob,0,50
+Charlie,1,0</pre>
                   <div class="text-caption q-mt-md q-mb-sm">Output CSV includes:</div>
                   <ul class="text-caption q-pl-md">
                     <li><code>wallet_name</code></li>
                     <li><code>wallet_id</code></li>
                     <li><code>admin_key</code> (empty if include_admin_key=0)</li>
                     <li><code>invoice_key</code></li>
+                    <li><code>initial_balance</code> (sats funded, 0 if none)</li>
                     <li><code>status</code></li>
                     <li><code>error</code></li>
                   </ul>

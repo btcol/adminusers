@@ -10,6 +10,10 @@ window.PageAdminusers = {
         loading: false
       },
 
+      // ── Source wallet selector ──
+      adminWallets: [],
+      selectedSourceWallet: null,
+
       // ── Batch result returned from the API ──
       batchResult: null,
 
@@ -95,6 +99,9 @@ window.PageAdminusers = {
       try {
         const formData = new FormData()
         formData.append('file', this.uploadState.file)
+        if (this.selectedSourceWallet) {
+          formData.append('source_wallet_id', this.selectedSourceWallet.id)
+        }
 
         const response = await fetch('/adminwallets/api/v1/wallets/upload', {
           method: 'POST',
@@ -143,12 +150,13 @@ window.PageAdminusers = {
     downloadResultCSV() {
       if (!this.batchResult) return
 
-      const headers = ['wallet_name', 'wallet_id', 'admin_key', 'invoice_key', 'status', 'error']
+      const headers = ['wallet_name', 'wallet_id', 'admin_key', 'invoice_key', 'initial_balance', 'status', 'error']
       const rows = this.batchResult.rows.map(r => [
         r.wallet_name || '',
         r.wallet_id || '',
         r.admin_key || '',
         r.invoice_key || '',
+        r.initial_balance != null ? r.initial_balance : '',
         r.status || '',
         r.error || ''
       ])
@@ -167,7 +175,7 @@ window.PageAdminusers = {
     },
 
     downloadTemplate() {
-      const content = 'wallet_name,include_admin_key\nAlice,1\nBob,0\nCharlie,1\n'
+      const content = 'wallet_name,include_admin_key,initial_balance\nAlice,1,100\nBob,0,50\nCharlie,1,0\n'
       const blob = new Blob([content], {type: 'text/csv;charset=utf-8;'})
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -226,13 +234,26 @@ window.PageAdminusers = {
 
     dateFromNow(date) {
       return moment(date).fromNow()
+    },
+
+    async loadAdminWallets() {
+      try {
+        const {data} = await LNbits.api.request(
+          'GET',
+          '/adminwallets/api/v1/admin-wallets',
+          null
+        )
+        this.adminWallets = data
+        if (data.length === 1) {
+          this.selectedSourceWallet = data[0]
+        }
+      } catch (error) {
+        LNbits.utils.notifyApiError(error)
+      }
     }
   },
 
-  // ──────────────────────────────────────────────
-  //  Lifecycle
-  // ──────────────────────────────────────────────
   async created() {
-    await this.getManagedWallets()
+    await Promise.all([this.getManagedWallets(), this.loadAdminWallets()])
   }
 }

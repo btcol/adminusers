@@ -41,6 +41,7 @@ class CsvInputRow(BaseModel):
 
     wallet_name: str
     include_admin_key: bool = False
+    initial_balance: int = 0  # sats to fund this wallet on creation
 
 
 class WalletBatchResultRow(BaseModel):
@@ -50,6 +51,7 @@ class WalletBatchResultRow(BaseModel):
     wallet_id: str | None = None
     admin_key: str | None = None
     invoice_key: str | None = None
+    initial_balance: int = 0  # sats actually funded (0 if none requested or failed)
     status: str  # "success" | "error"
     error: str | None = None
 

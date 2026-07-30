@@ -1,8 +1,10 @@
 # Description: API endpoints for the adminwallets extension.
 from http import HTTPStatus
+from typing import Optional
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, Form, UploadFile
 from fastapi.exceptions import HTTPException
+from lnbits.core.crud.wallets import get_wallets
 from lnbits.core.models import SimpleStatus, User
 from lnbits.db import Filters, Page
 from lnbits.decorators import check_admin, parse_filters
@@ -31,6 +33,28 @@ managed_wallet_filters = parse_filters(ManagedWalletFilters)
 adminwallets_api_router = APIRouter()
 
 
+############################# Admin Wallets Selector #############################
+
+
+@adminwallets_api_router.get(
+    "/api/v1/admin-wallets",
+    name="List Admin Wallets",
+    summary="List wallets belonging to the admin, for use as funding source selector.",
+)
+async def api_list_admin_wallets(
+    account: User = Depends(check_admin),
+):
+    wallets = await get_wallets(account.id)
+    return [
+        {
+            "id": w.id,
+            "name": w.name,
+            "balance_sat": w.balance_msat // 1000,
+        }
+        for w in wallets
+    ]
+
+
 ############################# Wallet Batch Upload #############################
 
 
@@ -39,6 +63,7 @@ adminwallets_api_router = APIRouter()
     name="Upload Wallet CSV",
     summary=(
         "Upload a CSV file with wallet names to create wallets in bulk. "
+        "Optionally include an 'initial_balance' column (sats) and select a source wallet. "
         "Returns structured results for client-side CSV download."
     ),
     response_description="Batch creation result with per-row status.",
@@ -47,6 +72,7 @@ adminwallets_api_router = APIRouter()
 )
 async def api_upload_wallet_csv(
     file: UploadFile,
+    source_wallet_id: Optional[str] = Form(default=None),
     account: User = Depends(check_admin),
 ) -> WalletBatchResult:
     if not file.filename or not file.filename.endswith(".csv"):
@@ -64,8 +90,22 @@ async def api_upload_wallet_csv(
             "File encoding not supported. Please upload a UTF-8 encoded CSV.",
         )
 
+    # Validate source wallet belongs to this admin
+    if source_wallet_id:
+        admin_wallets = await get_wallets(account.id)
+        admin_wallet_ids = {w.id for w in admin_wallets}
+        if source_wallet_id not in admin_wallet_ids:
+            raise HTTPException(
+                HTTPStatus.FORBIDDEN,
+                "source_wallet_id does not belong to your account.",
+            )
+
     try:
-        result = await process_wallet_csv(user_id=account.id, csv_content=csv_content)
+        result = await process_wallet_csv(
+            user_id=account.id,
+            csv_content=csv_content,
+            admin_wallet_id=source_wallet_id,
+        )
     except ValueError as exc:
         raise HTTPException(HTTPStatus.BAD_REQUEST, str(exc))
 
