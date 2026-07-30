@@ -372,7 +372,8 @@
 wallet_name,include_admin_key,initial_balance
 Alice,1,100
 Bob,0,50
-Charlie,1,0</pre>
+Charlie,1,0</pre
+                  >
                   <div class="text-caption q-mt-md q-mb-sm">
                     Output CSV includes:
                   </div>

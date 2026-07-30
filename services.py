@@ -65,9 +65,7 @@ def parse_csv_input(csv_content: str) -> list[CsvInputRow]:
         try:
             initial_balance = int(raw_balance)
         except ValueError as err:
-            raise ValueError(
-                f"Row {line_num}: initial_balance must be an integer, got '{raw_balance}'."
-            ) from err
+            raise ValueError(f"Row {line_num}: initial_balance must be an integer, got '{raw_balance}'.") from err
         if initial_balance < 0:
             raise ValueError(f"Row {line_num}: initial_balance cannot be negative.")
 
