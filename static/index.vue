@@ -1,7 +1,9 @@
 <template id="page-adminwallets">
   <div class="row q-col-gutter-md">
+
     <!-- ===================== LEFT COLUMN ===================== -->
     <div class="col-12 col-md-8 col-lg-7 q-gutter-y-md">
+
       <!-- ── Header card ── -->
       <q-card id="headerCard">
         <q-card-section>
@@ -9,8 +11,7 @@
             <div class="col">
               <span class="text-h5">Admin Wallet Manager</span>
               <div class="text-caption text-grey q-mt-xs">
-                Upload a CSV to create wallets in bulk and download their
-                credentials.
+                Upload a CSV to create wallets in bulk and download their credentials.
               </div>
             </div>
           </div>
@@ -37,18 +38,14 @@
         <q-tab-panels v-model="csvTab" animated>
           <q-tab-panel name="create" class="q-pa-none">
             <q-card-section>
-              <q-banner
-                rounded
-                class="q-mb-md bg-transparent"
-                style="border: 1px solid var(--q-primary)"
-              >
+              <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-primary)">
                 <template v-slot:avatar>
                   <q-icon name="info" color="primary" />
                 </template>
                 <div class="text-body2">
                   <strong>CSV format required:</strong> columns —
-                  <code>wallet_name</code>, <code>include_admin_key</code>, and
-                  optionally <code>initial_balance</code>
+                  <code>wallet_name</code>, <code>include_admin_key</code>,
+                  and optionally <code>initial_balance</code>
                   (sats to fund the wallet on creation, defaults to 0).
                 </div>
                 <div class="q-mt-xs">
@@ -81,20 +78,12 @@
                     <q-item v-bind="scope.itemProps">
                       <q-item-section>
                         <q-item-label>${ scope.opt.name }</q-item-label>
-                        <q-item-label caption
-                          >${ scope.opt.balance_sat } sats</q-item-label
-                        >
+                        <q-item-label caption>${ scope.opt.balance_sat } sats</q-item-label>
                       </q-item-section>
                     </q-item>
                   </template>
-                  <template
-                    v-slot:selected-item="scope"
-                    v-if="selectedSourceWallet"
-                  >
-                    <span
-                      >${ scope.opt.name } —
-                      <strong>${ scope.opt.balance_sat } sats</strong></span
-                    >
+                  <template v-slot:selected-item="scope" v-if="selectedSourceWallet">
+                    <span>${ scope.opt.name } — <strong>${ scope.opt.balance_sat } sats</strong></span>
                   </template>
                 </q-select>
               </div>
@@ -128,23 +117,40 @@
                   />
                 </div>
               </div>
+
+              <div v-if="batchResult" class="q-mt-md">
+                <q-banner rounded class="bg-positive text-white">
+                  <div class="row items-center justify-between">
+                    <div>
+                      <q-icon name="check_circle" size="sm" class="q-mr-xs" />
+                      <span><strong>${ batchResult.success_count }</strong> wallets created</span>
+                      <span v-if="batchResult.error_count > 0" class="q-ml-sm">(${ batchResult.error_count } failed)</span>
+                    </div>
+                    <q-btn
+                      dense
+                      unelevated
+                      color="white"
+                      text-color="positive"
+                      icon="file_download"
+                      label="Download CSV"
+                      class="q-px-sm"
+                      @click="downloadResultCSV"
+                    />
+                  </div>
+                </q-banner>
+              </div>
             </q-card-section>
           </q-tab-panel>
 
           <q-tab-panel name="delete" class="q-pa-none">
             <q-card-section>
-              <q-banner
-                rounded
-                class="q-mb-md bg-transparent"
-                style="border: 1px solid var(--q-negative)"
-              >
+              <q-banner rounded class="q-mb-md bg-transparent" style="border: 1px solid var(--q-negative)">
                 <template v-slot:avatar>
                   <q-icon name="warning" color="negative" />
                 </template>
                 <div class="text-body2">
-                  <strong>CSV format required:</strong> column —
-                  <code>wallet_id</code>. This will delete the wallets and sweep
-                  remaining funds to the admin wallet.
+                  <strong>CSV format required:</strong> column — <code>wallet_id</code>.
+                  This will delete the wallets and sweep remaining funds to the admin wallet.
                 </div>
                 <div class="q-mt-xs">
                   <q-btn
@@ -182,18 +188,39 @@
                     color="negative"
                     icon="delete_sweep"
                     label="Delete via CSV"
-                    :disable="
-                      !deleteUploadState.file || deleteUploadState.loading
-                    "
+                    :disable="!deleteUploadState.file || deleteUploadState.loading"
                     :loading="deleteUploadState.loading"
                     @click="uploadDeleteCSV"
                   />
                 </div>
               </div>
+
+              <div v-if="deleteBatchResult" class="q-mt-md">
+                <q-banner rounded class="bg-negative text-white">
+                  <div class="row items-center justify-between">
+                    <div>
+                      <q-icon name="check_circle" size="sm" class="q-mr-xs" />
+                      <span><strong>${ deleteBatchResult.success_count }</strong> wallets deleted</span>
+                      <span v-if="deleteBatchResult.error_count > 0" class="q-ml-sm">(${ deleteBatchResult.error_count } failed)</span>
+                    </div>
+                    <q-btn
+                      dense
+                      unelevated
+                      color="white"
+                      text-color="negative"
+                      icon="file_download"
+                      label="Download CSV"
+                      class="q-px-sm"
+                      @click="downloadDeleteResultCSV"
+                    />
+                  </div>
+                </q-banner>
+              </div>
             </q-card-section>
           </q-tab-panel>
         </q-tab-panels>
       </q-card>
+
 
       <!-- ── Wallet History card ── -->
       <div class="q-mt-md">
@@ -292,9 +319,7 @@
             </template>
 
             <template v-slot:no-data>
-              <div
-                class="full-width row flex-center text-grey q-gutter-sm q-py-lg"
-              >
+              <div class="full-width row flex-center text-grey q-gutter-sm q-py-lg">
                 <q-icon name="inbox" size="2em" />
                 <span>No wallets have been created yet.</span>
               </div>
@@ -306,13 +331,12 @@
 
     <!-- ===================== RIGHT COLUMN ===================== -->
     <div class="col-12 col-md-4 col-lg-5 q-gutter-y-md">
+
       <!-- Info card -->
       <q-card>
         <q-card-section>
           <h6 class="text-subtitle1 q-my-none">adminwallets</h6>
-          <p class="text-caption text-grey">
-            Creation and management of wallets
-          </p>
+          <p class="text-caption text-grey">Creation and management of wallets</p>
         </q-card-section>
         <q-card-section class="q-pa-none">
           <q-separator />
@@ -321,31 +345,13 @@
               <q-card>
                 <q-card-section>
                   <ol class="text-body2 q-pl-md">
-                    <li>
-                      Prepare a CSV with columns <code>wallet_name</code>,
-                      <code>include_admin_key</code> and optionally
-                      <code>initial_balance</code> (sats).
-                    </li>
-                    <li>
-                      Select a source wallet if you want to fund the new
-                      wallets.
-                    </li>
+                    <li>Prepare a CSV with columns <code>wallet_name</code>, <code>include_admin_key</code> and optionally <code>initial_balance</code> (sats).</li>
+                    <li>Select a source wallet if you want to fund the new wallets.</li>
                     <li>Upload the CSV using the form on the left.</li>
-                    <li>
-                      Click <strong>Process CSV</strong> — wallets are created
-                      and funded instantly.
-                    </li>
-                    <li>
-                      Download the result CSV with wallet credentials and
-                      funding status.
-                    </li>
+                    <li>Click <strong>Process CSV</strong> — wallets are created and funded instantly.</li>
+                    <li>Download the result CSV with wallet credentials and funding status.</li>
                   </ol>
-                  <q-banner
-                    rounded
-                    dense
-                    class="q-mt-sm bg-transparent"
-                    style="border: 1px solid orange"
-                  >
+                  <q-banner rounded dense class="q-mt-sm bg-transparent" style="border: 1px solid orange">
                     <template v-slot:avatar>
                       <q-icon name="lock" color="orange" size="xs" />
                     </template>
@@ -360,33 +366,21 @@
 
             <q-separator />
 
-            <q-expansion-item
-              group="extras"
-              icon="table_chart"
-              label="CSV format"
-            >
+            <q-expansion-item group="extras" icon="table_chart" label="CSV format">
               <q-card>
                 <q-card-section>
                   <div class="text-caption q-mb-sm">Input CSV example:</div>
-                  <pre class="bg-grey-2 q-pa-sm rounded-borders text-caption">
-wallet_name,include_admin_key,initial_balance
+                  <pre class="bg-grey-2 q-pa-sm rounded-borders text-caption">wallet_name,include_admin_key,initial_balance
 Alice,1,100
 Bob,0,50
-Charlie,1,0</pre
-                  >
-                  <div class="text-caption q-mt-md q-mb-sm">
-                    Output CSV includes:
-                  </div>
+Charlie,1,0</pre>
+                  <div class="text-caption q-mt-md q-mb-sm">Output CSV includes:</div>
                   <ul class="text-caption q-pl-md">
                     <li><code>wallet_name</code></li>
                     <li><code>wallet_id</code></li>
-                    <li>
-                      <code>admin_key</code> (empty if include_admin_key=0)
-                    </li>
+                    <li><code>admin_key</code> (empty if include_admin_key=0)</li>
                     <li><code>invoice_key</code></li>
-                    <li>
-                      <code>initial_balance</code> (sats funded, 0 if none)
-                    </li>
+                    <li><code>initial_balance</code> (sats funded, 0 if none)</li>
                     <li><code>status</code></li>
                     <li><code>error</code></li>
                   </ul>
@@ -396,224 +390,8 @@ Charlie,1,0</pre
           </q-list>
         </q-card-section>
       </q-card>
+
     </div>
+
   </div>
-
-  <!-- ── Result Modal (persistent: cannot be dismissed by clicking outside) ── -->
-  <q-dialog
-    v-model="resultDialogOpen"
-    persistent
-    transition-show="scale"
-    transition-hide="scale"
-  >
-    <q-card style="min-width: 480px; max-width: 95vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">
-          <q-icon name="summarize" class="q-mr-sm" color="primary" />
-          Processing Result
-        </div>
-        <q-space />
-        <q-chip
-          v-if="!resultDownloaded"
-          dense
-          color="orange"
-          text-color="white"
-          icon="warning"
-          label="Download before closing"
-        />
-        <q-chip
-          v-else
-          dense
-          color="positive"
-          text-color="white"
-          icon="check"
-          label="Downloaded"
-        />
-      </q-card-section>
-
-      <q-card-section>
-        <!-- Summary chips -->
-        <div class="row q-gutter-sm q-mb-md">
-          <q-chip icon="check_circle" color="positive" text-color="white">
-            ${ batchResult && batchResult.success_count } created
-          </q-chip>
-          <q-chip
-            v-if="batchResult && batchResult.error_count > 0"
-            icon="error"
-            color="negative"
-            text-color="white"
-          >
-            ${ batchResult.error_count } failed
-          </q-chip>
-          <q-chip icon="list" color="grey-7" text-color="white">
-            ${ batchResult && batchResult.total } total
-          </q-chip>
-          <q-chip
-            v-if="
-              batchResult && batchResult.rows.some(r => r.initial_balance > 0)
-            "
-            icon="bolt"
-            color="deep-orange"
-            text-color="white"
-          >
-            ${ batchResult && batchResult.rows.reduce((s, r) => s +
-            (r.initial_balance || 0), 0) } sats funded
-          </q-chip>
-        </div>
-
-        <!-- Error rows table -->
-        <div v-if="batchResult && batchResult.error_count > 0" class="q-mb-md">
-          <div class="text-subtitle2 q-mb-sm text-negative">
-            <q-icon name="warning" class="q-mr-xs" />Failed rows
-          </div>
-          <q-table
-            dense
-            flat
-            :rows="errorRows"
-            :columns="errorColumns"
-            row-key="wallet_name"
-            hide-bottom
-          />
-        </div>
-
-        <q-banner
-          rounded
-          class="bg-transparent"
-          style="border: 1px solid orange"
-        >
-          <template v-slot:avatar>
-            <q-icon name="lock" color="orange" />
-          </template>
-          <span class="text-caption">
-            Las credenciales de las wallets solo están disponibles en el CSV
-            descargado. No se almacenan aquí por razones de seguridad.
-          </span>
-        </q-banner>
-      </q-card-section>
-
-      <q-card-actions align="right" class="q-pa-md">
-        <q-btn
-          v-if="!resultDownloaded"
-          id="downloadResultBtn"
-          unelevated
-          color="positive"
-          icon="file_download"
-          label="Download CSV"
-          size="md"
-          @click="downloadResultCSV"
-        />
-        <q-btn
-          flat
-          :color="resultDownloaded ? 'positive' : 'grey'"
-          :icon="resultDownloaded ? 'check_circle' : 'close'"
-          :label="resultDownloaded ? 'Close' : 'Close without downloading'"
-          @click="closeResultDialog"
-        />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
-
-  <!-- ── Delete Result Modal ── -->
-  <q-dialog
-    v-model="deleteResultDialogOpen"
-    persistent
-    transition-show="scale"
-    transition-hide="scale"
-  >
-    <q-card style="min-width: 480px; max-width: 95vw">
-      <q-card-section class="row items-center q-pb-none">
-        <div class="text-h6">
-          <q-icon name="delete_sweep" class="q-mr-sm" color="negative" />
-          Deletion Result
-        </div>
-        <q-space />
-        <q-chip
-          v-if="!deleteResultDownloaded"
-          dense
-          color="orange"
-          text-color="white"
-          icon="warning"
-          label="Download before closing"
-        />
-        <q-chip
-          v-else
-          dense
-          color="positive"
-          text-color="white"
-          icon="check"
-          label="Downloaded"
-        />
-      </q-card-section>
-
-      <q-card-section>
-        <div class="row q-gutter-sm q-mb-md">
-          <q-chip icon="check_circle" color="positive" text-color="white">
-            ${ deleteBatchResult && deleteBatchResult.success_count } deleted
-          </q-chip>
-          <q-chip
-            v-if="deleteBatchResult && deleteBatchResult.error_count > 0"
-            icon="error"
-            color="negative"
-            text-color="white"
-          >
-            ${ deleteBatchResult.error_count } failed
-          </q-chip>
-          <q-chip icon="list" color="grey-7" text-color="white">
-            ${ deleteBatchResult && deleteBatchResult.total } total
-          </q-chip>
-          <q-chip
-            v-if="
-              deleteBatchResult &&
-              deleteBatchResult.rows.some(r => (r.funds_swept || 0) > 0)
-            "
-            icon="bolt"
-            color="deep-orange"
-            text-color="white"
-          >
-            ${ deleteBatchResult && deleteBatchResult.rows.reduce((s, r) => s +
-            (r.funds_swept || 0), 0) } sats swept
-          </q-chip>
-        </div>
-
-        <div
-          v-if="deleteBatchResult && deleteBatchResult.error_count > 0"
-          class="q-mb-md"
-        >
-          <div class="text-subtitle2 q-mb-sm text-negative">
-            <q-icon name="warning" class="q-mr-xs" />Failed rows
-          </div>
-          <q-table
-            dense
-            flat
-            :rows="deleteErrorRows"
-            :columns="deleteErrorColumns"
-            row-key="wallet_id"
-            hide-bottom
-          />
-        </div>
-      </q-card-section>
-
-      <q-card-actions align="right" class="q-pa-md">
-        <q-btn
-          v-if="!deleteResultDownloaded"
-          unelevated
-          color="positive"
-          icon="file_download"
-          label="Download CSV"
-          size="md"
-          @click="downloadDeleteResultCSV"
-        />
-        <q-btn
-          flat
-          :color="deleteResultDownloaded ? 'positive' : 'grey'"
-          :icon="deleteResultDownloaded ? 'check_circle' : 'close'"
-          :label="
-            deleteResultDownloaded ? 'Close' : 'Close without downloading'
-          "
-          @click="closeDeleteResultDialog"
-        />
-      </q-card-actions>
-    </q-card>
-  </q-dialog>
 </template>
-
