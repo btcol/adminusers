@@ -398,10 +398,8 @@ Charlie,1,0</pre
       </q-card>
     </div>
   </div>
-</template>
 
-<!-- ── Result Modal (persistent: cannot be dismissed by clicking outside) ── -->
-<template v-if="resultDialogOpen">
+  <!-- ── Result Modal (persistent: cannot be dismissed by clicking outside) ── -->
   <q-dialog
     v-model="resultDialogOpen"
     persistent
@@ -514,10 +512,8 @@ Charlie,1,0</pre
       </q-card-actions>
     </q-card>
   </q-dialog>
-</template>
 
-<!-- ── Delete Result Modal ── -->
-<template v-if="deleteResultDialogOpen">
+  <!-- ── Delete Result Modal ── -->
   <q-dialog
     v-model="deleteResultDialogOpen"
     persistent
@@ -620,3 +616,4 @@ Charlie,1,0</pre
     </q-card>
   </q-dialog>
 </template>
+
